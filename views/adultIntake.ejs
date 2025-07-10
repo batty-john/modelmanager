@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Adult Model Intake Form</title>
+  <link rel="stylesheet" href="/public/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .profile-pic-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      cursor: pointer;
+    }
+    .profile-pic {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #e5e7eb;
+    }
+    .profile-pic-placeholder {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: #6b7280;
+      border: 2px solid #e5e7eb;
+    }
+    .profile-pic-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="max-w-3xl mx-auto p-12 bg-white rounded shadow">
+    <div class="flex justify-center mb-8">
+      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" onerror="this.onerror=null;this.src='/public/logo.jpg';">
+    </div>
+    <h1 class="text-2xl font-bold mb-6 text-center">Adult Model Intake Form</h1>
+    <% if (errors && errors.length) { %>
+      <div class="bg-red-100 text-red-800 px-4 py-2 rounded mb-4 text-center">
+        <% errors.forEach(function(error) { %>
+          <div><%= error.msg %></div>
+        <% }); %>
+      </div>
+    <% } %>
+    <form id="adultIntakeForm" action="<%= dashboardEdit ? '/dashboard/edit-adult' : '/intake/adult' %>" method="POST" enctype="multipart/form-data">
+      <div id="adultsSection">
+        <% adults.forEach(function(adult, index) { %>
+        <div class="adult-section border-t pt-4 bg-gray-50 rounded-md p-4 border border-gray-200 mb-8" data-index="<%= index %>">
+          <input type="hidden" name="adultId<%= index %>" value="<%= adult.id || '' %>">
+          <div class="space-y-4">
+            <div class="flex flex-col items-center">
+              <label class="block text-sm font-medium text-gray-700">
+                <% if (index === 0) { %>
+                  One Good picture of yourself (Smiling, straight into camera)
+                <% } else { %>
+                  One good picture of your spouse (Smiling, straight into camera)
+                <% } %>
+              </label>
+              <div class="profile-pic-container mx-auto">
+                <% if (adult.photo) { %>
+                  <img src="<%= adult.photo %>" alt="Adult Photo" class="profile-pic" id="adultPhotoPreview<%= index %>">
+                  <input type="file" id="adultPhoto<%= index %>" name="adultPhoto<%= index %>" accept="image/*" class="profile-pic-input <%= errors && errors.some(e => e.field === `photo${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>">
+                  <input type="hidden" name="photo<%= index %>" value="<%= adult.photo %>">
+                  <% if (errors && errors.some(e => e.field === `photo${index}`)) { %>
+                    <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `photo${index}`).msg %></div>
+                  <% } %>
+                <% } else { %>
+                  <div class="profile-pic-placeholder">+</div>
+                  <input type="file" id="adultPhoto<%= index %>" name="adultPhoto<%= index %>" accept="image/*" class="profile-pic-input <%= errors && errors.some(e => e.field === `photo${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>">
+                  <% if (errors && errors.some(e => e.field === `photo${index}`)) { %>
+                    <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `photo${index}`).msg %></div>
+                  <% } %>
+                <% } %>
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-1/2">
+                <label for="firstName<%= index %>" class="block text-sm font-medium text-gray-700">First Name</label>
+                <input type="text" id="firstName<%= index %>" name="firstName<%= index %>" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4 <%= errors && errors.some(e => e.field === `firstName${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= adult.firstName %>">
+                <% if (errors && errors.some(e => e.field === `firstName${index}`)) { %>
+                  <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `firstName${index}`).msg %></div>
+                <% } %>
+              </div>
+              <div class="w-1/2">
+                <label for="lastName<%= index %>" class="block text-sm font-medium text-gray-700">Last Name</label>
+                <input type="text" id="lastName<%= index %>" name="lastName<%= index %>" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4 <%= errors && errors.some(e => e.field === `lastName${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= adult.lastName %>">
+                <% if (errors && errors.some(e => e.field === `lastName${index}`)) { %>
+                  <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `lastName${index}`).msg %></div>
+                <% } %>
+              </div>
+            </div>
+            <% if (index === 0) { %>
+            <div class="flex gap-4">
+              <div class="w-1/2">
+                <label for="email<%= index %>" class="block text-sm font-medium text-gray-700">Email</label>
+                <input type="email" id="email<%= index %>" name="email<%= index %>" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4 <%= errors && errors.some(e => e.field === `email${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= adult.email %>">
+                <% if (errors && errors.some(e => e.field === `email${index}`)) { %>
+                  <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `email${index}`).msg %></div>
+                <% } %>
+              </div>
+              <div class="w-1/2">
+                <label for="phone<%= index %>" class="block text-sm font-medium text-gray-700">Phone</label>
+                <input type="tel" id="phone<%= index %>" name="phone<%= index %>" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4 <%= errors && errors.some(e => e.field === `phone${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= adult.phone %>">
+                <% if (errors && errors.some(e => e.field === `phone${index}`)) { %>
+                  <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `phone${index}`).msg %></div>
+                <% } %>
+              </div>
+            </div>
+            <% } %>
+            <div class="flex gap-4">
+              <div class="w-1/2">
+                <label for="gender<%= index %>" class="block text-sm font-medium text-gray-700">Gender</label>
+                <select id="gender<%= index %>" name="gender<%= index %>" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4 <%= errors && errors.some(e => e.field === `gender${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>">
+                  <option value="">Select Gender</option>
+                  <option value="Male" <%= adult.gender === 'Male' ? 'selected' : '' %>>Male</option>
+                  <option value="Female" <%= adult.gender === 'Female' ? 'selected' : '' %>>Female</option>
+                  <option value="Other" <%= adult.gender === 'Other' ? 'selected' : '' %>>Other</option>
+                </select>
+                <% if (errors && errors.some(e => e.field === `gender${index}`)) { %>
+                  <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `gender${index}`).msg %></div>
+                <% } %>
+              </div>
+              <div class="w-1/2">
+                <label for="size<%= index %>" class="block text-sm font-medium text-gray-700">Size</label>
+                <select id="size<%= index %>" name="size<%= index %>" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4 <%= errors && errors.some(e => e.field === `size${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>">
+                  <option value="">Select Size</option>
+                  <option value="XS" <%= adult.size === 'XS' ? 'selected' : '' %>>XS</option>
+                  <option value="S" <%= adult.size === 'S' ? 'selected' : '' %>>S</option>
+                  <option value="M" <%= adult.size === 'M' ? 'selected' : '' %>>M</option>
+                  <option value="L" <%= adult.size === 'L' ? 'selected' : '' %>>L</option>
+                  <option value="XL" <%= adult.size === 'XL' ? 'selected' : '' %>>XL</option>
+                  <option value="XXL" <%= adult.size === 'XXL' ? 'selected' : '' %>>XXL</option>
+                </select>
+                <% if (errors && errors.some(e => e.field === `size${index}`)) { %>
+                  <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `size${index}`).msg %></div>
+                <% } %>
+              </div>
+            </div>
+            <% if (index > 0) { %>
+            <div class="flex justify-center">
+              <button type="button" class="btn-gold-outline px-8 py-2 w-full remove-adult">Remove Spouse</button>
+            </div>
+            <% } %>
+          </div>
+        </div>
+        <% }); %>
+      </div>
+      <div class="flex justify-center mb-6" id="addSpouseContainer" <%= adults.length > 1 ? 'style="display:none;"' : '' %>>
+        <button type="button" id="addAdult" class="btn-gold-outline px-8 py-2 w-full">Add Spouse</button>
+      </div>
+      <!-- Preferred Contact Method for the whole family -->
+      <div class="space-y-4 mb-4">
+        <div>
+          <label for="preferredContact" class="block text-sm font-medium text-gray-700">Preferred Contact Method</label>
+          <select id="preferredContact" name="preferredContact" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4 <%= errors && errors.some(e => e.field === 'preferredContact') ? 'border-red-500 ring-2 ring-red-400' : '' %>">
+            <option value="">Select Contact Method</option>
+            <option value="Phone" <%= user && user.preferredContact === 'Phone' ? 'selected' : '' %>>Phone</option>
+            <option value="Facebook" <%= user && user.preferredContact === 'Facebook' ? 'selected' : '' %>>Facebook</option>
+            <option value="Instagram" <%= user && user.preferredContact === 'Instagram' ? 'selected' : '' %>>Instagram</option>
+            <option value="Email" <%= user && user.preferredContact === 'Email' ? 'selected' : '' %>>Email</option>
+          </select>
+          <% if (errors && errors.some(e => e.field === 'preferredContact')) { %>
+            <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === 'preferredContact').msg %></div>
+          <% } %>
+        </div>
+        <div class="facebook-link-section" style="display: <%= user && user.preferredContact === 'Facebook' ? 'block' : 'none' %>;">
+          <label for="facebookProfileLink" class="block text-sm font-medium text-gray-700">Facebook Profile Link</label>
+          <input type="url" id="facebookProfileLink" name="facebookProfileLink" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4 <%= errors && errors.some(e => e.field === 'facebookProfileLink') ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= user ? user.facebookProfileLink : '' %>">
+          <% if (errors && errors.some(e => e.field === 'facebookProfileLink')) { %>
+            <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === 'facebookProfileLink').msg %></div>
+          <% } %>
+        </div>
+        <div class="instagram-link-section" style="display: <%= user && user.preferredContact === 'Instagram' ? 'block' : 'none' %>;">
+          <label for="instagramProfileLink" class="block text-sm font-medium text-gray-700">Instagram Profile Link</label>
+          <input type="url" id="instagramProfileLink" name="instagramProfileLink" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.instagramProfileLink : '' %>">
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div>
+          <label for="hasModeled" class="block text-sm font-medium text-gray-700">Has anyone in your family modeled before?</label>
+          <select id="hasModeled" name="hasModeled" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4">
+            <option value="">Select Option</option>
+            <option value="true" <%= user && user.hasModeledBefore === true ? 'selected' : '' %>>Yes</option>
+            <option value="false" <%= user && user.hasModeledBefore === false ? 'selected' : '' %>>No</option>
+          </select>
+        </div>
+        <div id="brandsWorked" class="hidden">
+          <label for="brands" class="block text-sm font-medium text-gray-700">Brands Your Family Has Worked With</label>
+          <textarea id="brands" name="brands" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
+        </div>
+      </div>
+      <button type="submit" class="btn-gold-gradient px-8 py-2 w-full mt-8">Submit</button>
+    </form>
+  </div>
+  <script>
+    // Add adult section dynamically
+    let adultIndex = <%= adults.length - 1 %>;
+    function attachAddSpouseListener() {
+      const addBtn = document.getElementById('addAdult');
+      if (!addBtn) return;
+      addBtn.onclick = () => {
+        if (adultIndex >= 1) return; // Only allow max 2 adults
+        adultIndex++;
+        const adultsSection = document.getElementById('adultsSection');
+        const newAdultSection = document.createElement('div');
+        newAdultSection.classList.add('adult-section', 'border-t', 'pt-4', 'bg-gray-50', 'rounded-md', 'p-4', 'border', 'border-gray-200', 'mb-8');
+        newAdultSection.setAttribute('data-index', adultIndex);
+        newAdultSection.innerHTML = `
+          <div class="space-y-4">
+            <div class="flex flex-col items-center">
+              <label class="block text-sm font-medium text-gray-700">One good picture of your spouse (Smiling, straight into camera)</label>
+              <div class="profile-pic-container mx-auto">
+                <div class="profile-pic-placeholder">+</div>
+                <input type="file" id="adultPhoto${adultIndex}" name="adultPhoto${adultIndex}" accept="image/*" class="profile-pic-input">
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-1/2">
+                <label for="firstName${adultIndex}" class="block text-sm font-medium text-gray-700">First Name</label>
+                <input type="text" id="firstName${adultIndex}" name="firstName${adultIndex}" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4">
+              </div>
+              <div class="w-1/2">
+                <label for="lastName${adultIndex}" class="block text-sm font-medium text-gray-700">Last Name</label>
+                <input type="text" id="lastName${adultIndex}" name="lastName${adultIndex}" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4">
+              </div>
+            </div>
+            <div class="flex gap-4">
+              <div class="w-1/2">
+                <label for="gender${adultIndex}" class="block text-sm font-medium text-gray-700">Gender</label>
+                <select id="gender${adultIndex}" name="gender${adultIndex}" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4">
+                  <option value="">Select Gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="w-1/2">
+                <label for="size${adultIndex}" class="block text-sm font-medium text-gray-700">Size</label>
+                <select id="size${adultIndex}" name="size${adultIndex}" required class="w-full rounded-md border-gray-300 shadow-sm py-2 px-4">
+                  <option value="">Select Size</option>
+                  <option value="XS">XS</option>
+                  <option value="S">S</option>
+                  <option value="M">M</option>
+                  <option value="L">L</option>
+                  <option value="XL">XL</option>
+                  <option value="XXL">XXL</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex justify-center">
+              <button type="button" class="btn-gold-outline px-8 py-2 w-full remove-adult">Remove Spouse</button>
+            </div>
+          </div>
+        `;
+        adultsSection.appendChild(newAdultSection);
+        setupProfilePicUpload(adultIndex);
+        // Hide Add Spouse button after second adult
+        if (adultIndex >= 1) {
+          document.getElementById('addSpouseContainer').style.display = 'none';
+        }
+      };
+    }
+    attachAddSpouseListener();
+
+    // Remove adult section
+    document.getElementById('adultsSection').addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-adult')) {
+        e.target.closest('.adult-section').remove();
+        // Show Add Spouse button again if only one adult remains
+        if (document.querySelectorAll('.adult-section').length < 2) {
+          document.getElementById('addSpouseContainer').style.display = '';
+          attachAddSpouseListener();
+        }
+      }
+    });
+
+    // Profile picture upload/preview logic for adults
+    function setupProfilePicUpload(index) {
+      const container = document.querySelector(`.adult-section[data-index='${index}'] .profile-pic-container`);
+      if (!container) return;
+      const input = container.querySelector('.profile-pic-input');
+      let placeholder = container.querySelector('.profile-pic-placeholder');
+      let img = container.querySelector('.profile-pic');
+      // Click on container triggers file input
+      container.addEventListener('click', (e) => {
+        if (e.target === input) return;
+        input.click();
+      });
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            if (img) {
+              img.src = ev.target.result;
+              img.classList.remove('hidden');
+            } else {
+              img = document.createElement('img');
+              img.src = ev.target.result;
+              img.className = 'profile-pic';
+              img.alt = 'Adult Photo';
+              if (placeholder) {
+                placeholder.replaceWith(img);
+                placeholder = null;
+              } else {
+                container.appendChild(img);
+              }
+            }
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+    // Initialize profile pic upload for all existing adults
+    document.querySelectorAll('.adult-section').forEach((section, idx) => {
+      setupProfilePicUpload(idx);
+    });
+
+    // Show/hide brands worked with based on hasModeled
+    const hasModeledSelect = document.getElementById('hasModeled');
+    const brandsWorked = document.getElementById('brandsWorked');
+    hasModeledSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'true') {
+        brandsWorked.classList.remove('hidden');
+        document.getElementById('brands').required = true;
+      } else {
+        brandsWorked.classList.add('hidden');
+        document.getElementById('brands').required = false;
+      }
+    });
+    if (hasModeledSelect.value === 'true') {
+      brandsWorked.classList.remove('hidden');
+      document.getElementById('brands').required = true;
+    }
+
+    // Remove preferredContact logic from adult sections
+    // Add logic for the single preferredContact at the bottom
+    const preferredContactSelect = document.getElementById('preferredContact');
+    const facebookSection = document.querySelector('.facebook-link-section');
+    const instagramSection = document.querySelector('.instagram-link-section');
+    preferredContactSelect.addEventListener('change', (e) => {
+      if (e.target.value === 'Facebook') {
+        facebookSection.style.display = 'block';
+        instagramSection.style.display = 'none';
+      } else if (e.target.value === 'Instagram') {
+        facebookSection.style.display = 'none';
+        instagramSection.style.display = 'block';
+      } else {
+        facebookSection.style.display = 'none';
+        instagramSection.style.display = 'none';
+      }
+    });
+    if (preferredContactSelect.value === 'Facebook') {
+      facebookSection.style.display = 'block';
+      instagramSection.style.display = 'none';
+    } else if (preferredContactSelect.value === 'Instagram') {
+      facebookSection.style.display = 'none';
+      instagramSection.style.display = 'block';
+    } else {
+      facebookSection.style.display = 'none';
+      instagramSection.style.display = 'none';
+    }
+  </script>
+</body>
+</html> 

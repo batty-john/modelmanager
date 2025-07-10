@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Model Dashboard</title>
+  <link rel="stylesheet" href="/public/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="max-w-full xl:max-w-screen-2xl mx-auto p-8">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Model Management</h1>
+      <div class="flex items-center gap-4">
+        <!-- Client Dropdown -->
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-semibold text-gray-700">Client:</label>
+          <select id="clientSelect" class="input-gold w-48 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <option value="">Select Client</option>
+            <% clients.forEach(function(client) { %>
+              <option value="<%= client.id %>" <%= selectedClientId == client.id ? 'selected' : '' %>><%= client.name %></option>
+            <% }); %>
+          </select>
+          <button type="button" id="createClientBtn" class="btn-gold-gradient px-3 py-2 rounded text-sm">New Client</button>
+        </div>
+        
+        <!-- Shoot Dropdown (only visible when client is selected) -->
+        <div id="shootSection" class="flex items-center gap-2" style="display: <%= selectedClientId ? 'flex' : 'none' %>;">
+          <label class="text-sm font-semibold text-gray-700">Shoot:</label>
+          <select id="shootSelect" class="input-gold w-48 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+            <option value="">Select Shoot</option>
+            <% shoots.forEach(function(shoot) { %>
+              <option value="<%= shoot.id %>" <%= selectedShootId == shoot.id ? 'selected' : '' %>><%= shoot.name %></option>
+            <% }); %>
+          </select>
+          <button type="button" id="createShootBtn" class="btn-gold-gradient px-3 py-2 rounded text-sm">New Shoot</button>
+        </div>
+        
+        <button id="toggleView" class="btn-gold-outline px-6 py-2 rounded">Switch to <%= viewMode === 'spreadsheet' ? 'Card' : 'Spreadsheet' %> View</button>
+      </div>
+    </div>
+    <!-- Filter Bar -->
+    <form id="filterBar" class="flex flex-wrap gap-4 bg-white p-4 rounded shadow mb-6" onsubmit="return false;">
+      <input type="hidden" name="view" value="<%= viewMode %>">
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Name</label>
+        <input type="text" name="filterName" id="filterName" placeholder="Search name" class="input-gold w-32">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Gender</label>
+        <select name="gender" id="filterGender" class="input-gold w-32 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          <option value="">All</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Age</label>
+        <input type="text" name="minAge" id="filterMinAge" placeholder="Min" class="input-gold w-16"> -
+        <input type="text" name="maxAge" id="filterMaxAge" placeholder="Max" class="input-gold w-16">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Weight</label>
+        <input type="text" name="minWeight" id="filterMinWeight" placeholder="Min" class="input-gold w-16"> -
+        <input type="text" name="maxWeight" id="filterMaxWeight" placeholder="Max" class="input-gold w-16">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Size</label>
+        <select name="size" id="filterSize" class="input-gold w-20 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          <option value="">All</option>
+          <option value="XS">XS</option>
+          <option value="S">S</option>
+          <option value="M">M</option>
+          <option value="L">L</option>
+          <option value="XL">XL</option>
+          <option value="XXL">XXL</option>
+          <option value="3T-4T">3T-4T</option>
+          <option value="5T-6T">5T-6T</option>
+          <option value="7Y-8Y">7Y-8Y</option>
+          <option value="10Y-12Y">10Y-12Y</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Brands</label>
+        <input type="text" name="brands" id="filterBrands" class="input-gold w-32">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Exclude Brands</label>
+        <input type="text" name="excludeBrands" id="filterExcludeBrands" class="input-gold w-32">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Model Type</label>
+        <select name="modelType" id="filterModelType" class="input-gold w-28 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          <option value="">All</option>
+          <option value="adult">Adult</option>
+          <option value="child">Child</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Height (inches)</label>
+        <input type="text" name="minHeight" id="filterMinHeight" placeholder="Min" class="input-gold w-16"> -
+        <input type="text" name="maxHeight" id="filterMaxHeight" placeholder="Max" class="input-gold w-16">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Last Updated</label>
+        <input type="date" name="minUpdated" id="filterMinUpdated" class="input-gold w-32"> -
+        <input type="date" name="maxUpdated" id="filterMaxUpdated" class="input-gold w-32">
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Sort By</label>
+        <select name="sort" id="filterSort" class="input-gold w-40 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          <option value="">Default</option>
+          <option value="alpha">Alphabetical</option>
+          <option value="updated">Recently Updated</option>
+          <option value="age">Age</option>
+        </select>
+      </div>
+      <div id="approvalFilterSection" style="display: <%= selectedShootId ? 'block' : 'none' %>;">
+        <label class="block text-xs font-semibold text-gray-700">Approval Status</label>
+        <select name="approvalStatus" id="filterApprovalStatus" class="input-gold w-32 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-yellow-400">
+          <option value="">All</option>
+          <option value="1">Approved</option>
+          <option value="0">Disapproved</option>
+          <option value="null">Pending</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <button type="button" id="resetFilters" class="btn-gold-gradient px-6 py-2 rounded">Reset Filters</button>
+      </div>
+    </form>
+    <script>
+    // Set a JS variable for view mode
+    var isCardView = '<%= viewMode %>' === 'card';
+    // Real-time filtering logic
+    function getCellValue(row, selector) {
+      // Try to get input/select value first
+      const input = row.querySelector(selector.split(',')[0]);
+      if (input && (input.tagName === 'INPUT' || input.tagName === 'SELECT')) {
+        return input.value || '';
+      }
+      // Fallback to text content of the cell
+      const cell = row.querySelector(selector.split(',').pop());
+      return cell ? cell.textContent || '' : '';
+    }
+    function filterTable() {
+      const nameFilter = document.getElementById('filterName').value.toLowerCase();
+      const gender = document.getElementById('filterGender').value;
+      const minAge = parseInt(document.getElementById('filterMinAge').value) || null;
+      const maxAge = parseInt(document.getElementById('filterMaxAge').value) || null;
+      const minWeight = parseFloat(document.getElementById('filterMinWeight').value) || null;
+      const maxWeight = parseFloat(document.getElementById('filterMaxWeight').value) || null;
+      const minHeight = parseFloat(document.getElementById('filterMinHeight').value) || null;
+      const maxHeight = parseFloat(document.getElementById('filterMaxHeight').value) || null;
+      const minUpdated = document.getElementById('filterMinUpdated').value;
+      const maxUpdated = document.getElementById('filterMaxUpdated').value;
+      const size = document.getElementById('filterSize').value;
+      const brands = document.getElementById('filterBrands').value.toLowerCase();
+      const excludeBrands = document.getElementById('filterExcludeBrands').value.toLowerCase();
+      const modelType = document.getElementById('filterModelType').value;
+      const approvalStatus = document.getElementById('filterApprovalStatus').value;
+      const table = document.querySelector('table');
+      if (!table) return;
+      const rows = table.querySelectorAll('tbody tr');
+      rows.forEach(row => {
+        let show = true;
+        const type = getCellValue(row, 'td:nth-child(4)');
+        const genderSelect = row.querySelector('td:nth-child(5) select');
+        const genderVal = genderSelect ? genderSelect.value : '';
+        const dob = getCellValue(row, 'td:nth-child(6) input');
+        const weightVal = getCellValue(row, 'td:nth-child(8) input');
+        const sizeSelect = row.querySelector('td:nth-child(10) select');
+        const sizeVal = sizeSelect ? sizeSelect.value : '';
+        const heightVal = getCellValue(row, 'td:nth-child(9) input');
+        const brandsVal = getCellValue(row, 'td:nth-child(11) input');
+        const updatedVal = getCellValue(row, 'td:nth-child(18)');
+        const firstNameVal = getCellValue(row, 'td:nth-child(2) input');
+        const lastNameVal = getCellValue(row, 'td:nth-child(3) input');
+        const approvalSelect = row.querySelector('.approval-input');
+        const approvalVal = approvalSelect ? approvalSelect.value : '';
+        
+        // Name filter
+        if (nameFilter && !(firstNameVal.toLowerCase().includes(nameFilter) || lastNameVal.toLowerCase().includes(nameFilter))) show = false;
+        // Gender
+        if (gender) {
+          console.log('Gender filter:', { filterValue: gender, rowValue: genderVal });
+          if (genderVal.trim().toLowerCase() !== gender.trim().toLowerCase()) {
+            console.log('Row hidden due to gender:', { filterValue: gender, rowValue: genderVal });
+            show = false;
+          }
+        }
+        // Model Type
+        if (modelType && type !== modelType.charAt(0).toUpperCase() + modelType.slice(1)) show = false;
+        // Size
+        if (size && sizeVal !== size) show = false;
+        // Brands
+        if (brands && !brandsVal.toLowerCase().includes(brands)) show = false;
+        // Exclude Brands
+        if (excludeBrands && brandsVal.toLowerCase().includes(excludeBrands)) show = false;
+        // Approval Status
+        if (approvalStatus && approvalStatus !== '') {
+          if (approvalStatus === 'null' && approvalVal !== '') {
+            show = false;
+          } else if (approvalStatus !== 'null' && approvalVal !== approvalStatus) {
+            show = false;
+          }
+        }
+        // Weight
+        const weightNum = parseFloat(weightVal);
+        if (minWeight && (!weightNum || weightNum < minWeight)) show = false;
+        if (maxWeight && (!weightNum || weightNum > maxWeight)) show = false;
+        // Height (children only)
+        if (row.getAttribute('data-model-type') === 'child') {
+          const heightNum = parseFloat(heightVal);
+          if (minHeight && (!heightNum || heightNum < minHeight)) show = false;
+          if (maxHeight && (!heightNum || heightNum > maxHeight)) show = false;
+        }
+        // Age (if DOB is available, calculate age)
+        if (dob && (minAge || maxAge)) {
+          const dobDate = new Date(dob);
+          if (!isNaN(dobDate)) {
+            const age = Math.floor((Date.now() - dobDate.getTime()) / (365.25*24*60*60*1000));
+            if (minAge && age < minAge) show = false;
+            if (maxAge && age > maxAge) show = false;
+          }
+        }
+        // Last Updated filter
+        if (minUpdated && updatedVal) {
+          const updatedDate = new Date(updatedVal.trim());
+          const minDate = new Date(minUpdated);
+          if (!isNaN(updatedDate) && !isNaN(minDate)) {
+            if (updatedDate < minDate) {
+              show = false;
+            }
+          }
+        }
+        if (maxUpdated && updatedVal) {
+          const updatedDate = new Date(updatedVal.trim());
+          const maxDate = new Date(maxUpdated);
+          if (!isNaN(updatedDate) && !isNaN(maxDate)) {
+            if (updatedDate > maxDate) {
+              show = false;
+            }
+          }
+        }
+        row.style.display = show ? '' : 'none';
+      });
+    }
+    // Attach listeners
+    ['filterName','filterGender','filterMinAge','filterMaxAge','filterMinWeight','filterMaxWeight','filterMinHeight','filterMaxHeight','filterSize','filterBrands','filterExcludeBrands','filterModelType','filterMinUpdated','filterMaxUpdated','filterApprovalStatus'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function() {
+        if (isCardView) filterCards();
+        else filterTable();
+      });
+    });
+    document.getElementById('resetFilters').addEventListener('click', function() {
+      document.getElementById('filterBar').reset();
+      if (isCardView) filterCards();
+      else filterTable();
+    });
+    if (isCardView) filterCards();
+    else filterTable();
+    </script>
+    <!-- Spreadsheet/Table View -->
+    <% if (viewMode === 'spreadsheet') { %>
+    <div class="overflow-x-auto bg-white rounded shadow">
+      <table class="min-w-max w-full divide-y divide-gray-200">
+        <thead class="bg-gradient-to-r from-yellow-400 to-yellow-200">
+          <tr>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700" style="width:64px;min-width:64px;">Photo</th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="firstName">First Name <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="lastName">Last Name <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="type">Type <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="gender">Gender <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="dob">DOB <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="age">Age <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="weight">Weight <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="height">Height (in) <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="size">Size <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="brands">Brands Modeled For <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="phone">Phone <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="email">Email <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700">Contact First Name</th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700">Contact Last Name</th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="preferredContact">Preferred Contact <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="socialLink">Social Link <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="updatedAt">Last Updated <span class="sort-arrow"></span></th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700" id="approvalHeader" style="display: <%= selectedShootId ? 'table-cell' : 'none' %>;">Approval Status</th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% adults.forEach(function(adult) { %>
+            <tr class="border-b" data-model-type="adult" data-model-id="<%= adult.id %>" data-dob="<%= adult.dob || '' %>">
+              <td class="px-4 py-2" style="width:64px;min-width:64px;"><img src="<%= adult.photo %>" class="w-12 h-12 rounded-full object-cover" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.firstName %>" class="input-gold w-24 first-name-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.lastName %>" class="input-gold w-24 last-name-input" /></td>
+              <td class="px-4 py-2">Adult</td>
+              <td class="px-4 py-2">
+                <select class="input-gold w-20 gender-input">
+                  <option value="Male" <%= adult.gender === 'Male' ? 'selected' : '' %>>Male</option>
+                  <option value="Female" <%= adult.gender === 'Female' ? 'selected' : '' %>>Female</option>
+                  <option value="Other" <%= adult.gender === 'Other' ? 'selected' : '' %>>Other</option>
+                </select>
+              </td>
+              <td class="px-4 py-2"><input type="date" value="<%= adult.dob || '' %>" class="input-gold w-28 dob-input" /></td>
+              <td class="px-4 py-2 age-cell"></td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.weight || '' %>" class="input-gold w-16 weight-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="" class="input-gold w-16 height-input" disabled /></td>
+              <td class="px-4 py-2">
+                <select class="input-gold w-16 size-input">
+                  <option value="">Select</option>
+                  <option value="XS" <%= adult.size === 'XS' ? 'selected' : '' %>>XS</option>
+                  <option value="S" <%= adult.size === 'S' ? 'selected' : '' %>>S</option>
+                  <option value="M" <%= adult.size === 'M' ? 'selected' : '' %>>M</option>
+                  <option value="L" <%= adult.size === 'L' ? 'selected' : '' %>>L</option>
+                  <option value="XL" <%= adult.size === 'XL' ? 'selected' : '' %>>XL</option>
+                  <option value="XXL" <%= adult.size === 'XXL' ? 'selected' : '' %>>XXL</option>
+                </select>
+              </td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.brandsWorkedWith %>" class="input-gold w-32 brands-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.phone || '' %>" class="input-gold w-32 phone-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.email || '' %>" class="input-gold w-32 email-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.parentFirstName || '' %>" class="input-gold w-24 contact-first-name-input" disabled /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.parentLastName || '' %>" class="input-gold w-24 contact-last-name-input" disabled /></td>
+              <td class="px-4 py-2">
+                <select class="input-gold w-32 preferred-contact-input">
+                  <option value="">Select Contact</option>
+                  <option value="Phone" <%= (adult.preferredContact === 'Phone') ? 'selected' : '' %>>Phone</option>
+                  <option value="Facebook" <%= (adult.preferredContact === 'Facebook') ? 'selected' : '' %>>Facebook</option>
+                  <option value="Instagram" <%= (adult.preferredContact === 'Instagram') ? 'selected' : '' %>>Instagram</option>
+                  <option value="Email" <%= (adult.preferredContact === 'Email') ? 'selected' : '' %>>Email</option>
+                </select>
+              </td>
+              <td class="px-4 py-2"><input type="text" value="<%= adult.facebookProfileLink || adult.instagramProfileLink || '' %>" class="input-gold w-32 social-link-input" /></td>
+              <td class="px-4 py-2 last-updated-cell"><%= adult.updatedAt ? adult.updatedAt.toISOString().slice(0,10) : '' %></td>
+              <td class="px-4 py-2 approval-cell" style="display: <%= selectedShootId ? 'table-cell' : 'none' %>;">
+                <select class="input-gold w-24 approval-input" data-model-type="adult" data-model-id="<%= adult.id %>">
+                  <option value="">Pending</option>
+                  <option value="1" <%= adult.approvalStatus === 1 ? 'selected' : '' %>>Approved</option>
+                  <option value="0" <%= adult.approvalStatus === 0 ? 'selected' : '' %>>Disapproved</option>
+                </select>
+              </td>
+              <td class="px-4 py-2">
+                <button class="btn-gold-outline px-3 py-1 rounded save-btn">Save</button>
+                <button class="btn-red-outline px-3 py-1 rounded delete-btn ml-2" data-model-type="adult" data-model-id="<%= adult.id %>" data-model-name="<%= adult.firstName %> <%= adult.lastName %>">Delete</button>
+                <span class="save-status"></span>
+              </td>
+            </tr>
+          <% }); %>
+          <% children.forEach(function(child) { %>
+            <tr class="border-b" data-model-type="child" data-model-id="<%= child.id %>" data-dob="<%= child.childDOB || '' %>">
+              <td class="px-4 py-2" style="width:64px;min-width:64px;"><img src="<%= child.photo %>" class="w-12 h-12 rounded-full object-cover" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.childFirstName %>" class="input-gold w-24 first-name-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.childLastName || '' %>" class="input-gold w-24 last-name-input" /></td>
+              <td class="px-4 py-2">Child</td>
+              <td class="px-4 py-2">
+                <select class="input-gold w-20 gender-input">
+                  <option value="Male" <%= child.childGender === 'Male' ? 'selected' : '' %>>Male</option>
+                  <option value="Female" <%= child.childGender === 'Female' ? 'selected' : '' %>>Female</option>
+                  <option value="Other" <%= child.childGender === 'Other' ? 'selected' : '' %>>Other</option>
+                </select>
+              </td>
+              <td class="px-4 py-2"><input type="date" value="<%= child.childDOB %>" class="input-gold w-28 dob-input" /></td>
+              <td class="px-4 py-2 age-cell"></td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.childWeight %>" class="input-gold w-16 weight-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.childHeight %>" class="input-gold w-16 height-input" /></td>
+              <td class="px-4 py-2">
+                <select class="input-gold w-16 size-input">
+                  <option value="">Select</option>
+                  <option value="3T-4T" <%= child.childSize === '3T-4T' ? 'selected' : '' %>>3T-4T</option>
+                  <option value="5T-6T" <%= child.childSize === '5T-6T' ? 'selected' : '' %>>5T-6T</option>
+                  <option value="7Y-8Y" <%= child.childSize === '7Y-8Y' ? 'selected' : '' %>>7Y-8Y</option>
+                  <option value="10Y-12Y" <%= child.childSize === '10Y-12Y' ? 'selected' : '' %>>10Y-12Y</option>
+                </select>
+              </td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.brandsWorkedWith %>" class="input-gold w-32 brands-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.parentPhone || '' %>" class="input-gold w-32 phone-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.parentEmail || '' %>" class="input-gold w-32 email-input" /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.parentFirstName || '' %>" class="input-gold w-24 contact-first-name-input" disabled /></td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.parentLastName || '' %>" class="input-gold w-24 contact-last-name-input" disabled /></td>
+              <td class="px-4 py-2">
+                <select class="input-gold w-32 preferred-contact-input">
+                  <option value="">Select Contact</option>
+                  <option value="Phone" <%= (child.preferredContact === 'Phone') ? 'selected' : '' %>>Phone</option>
+                  <option value="Facebook" <%= (child.preferredContact === 'Facebook') ? 'selected' : '' %>>Facebook</option>
+                  <option value="Instagram" <%= (child.preferredContact === 'Instagram') ? 'selected' : '' %>>Instagram</option>
+                  <option value="Email" <%= (child.preferredContact === 'Email') ? 'selected' : '' %>>Email</option>
+                </select>
+              </td>
+              <td class="px-4 py-2"><input type="text" value="<%= child.facebookProfileLink || child.instagramProfileLink || '' %>" class="input-gold w-32 social-link-input" /></td>
+              <td class="px-4 py-2 last-updated-cell"><%= child.updatedAt ? child.updatedAt.toISOString().slice(0,10) : '' %></td>
+              <td class="px-4 py-2 approval-cell" style="display: <%= selectedShootId ? 'table-cell' : 'none' %>;">
+                <select class="input-gold w-24 approval-input" data-model-type="child" data-model-id="<%= child.id %>">
+                  <option value="">Pending</option>
+                  <option value="1" <%= child.approvalStatus === 1 ? 'selected' : '' %>>Approved</option>
+                  <option value="0" <%= child.approvalStatus === 0 ? 'selected' : '' %>>Disapproved</option>
+                </select>
+              </td>
+              <td class="px-4 py-2">
+                <button class="btn-gold-outline px-3 py-1 rounded save-btn">Save</button>
+                <button class="btn-red-outline px-3 py-1 rounded delete-btn ml-2" data-model-type="child" data-model-id="<%= child.id %>" data-model-name="<%= child.childFirstName %> <%= child.childLastName || '' %>">Delete</button>
+                <span class="save-status"></span>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <% } else if (viewMode === 'card') { %>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <% adults.forEach(function(adult) { %>
+        <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="adult" data-model-id="<%= adult.id %>" data-dob="<%= adult.dob || '' %>">
+          <div class="w-full h-48 bg-gray-200 flex-shrink-0">
+            <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" />
+          </div>
+          <div class="p-4 flex flex-col items-center">
+            <div class="font-bold text-lg mb-1"><%= adult.firstName %> <%= adult.lastName %></div>
+            <div class="text-xs text-gray-500 mb-2">Adult</div>
+            <div class="mb-1"><span class="font-semibold">Gender:</span> <span class="gender-value"><%= adult.gender %></span></div>
+            <% if (adult.dob) { %>
+              <div class="mb-1"><span class="font-semibold">Age:</span> <span class="age-cell"></span></div>
+            <% } %>
+            <div class="mb-1"><span class="font-semibold">Weight:</span> <span class="weight-value"><%= adult.weight || '' %></span></div>
+            <div class="mb-1"><span class="font-semibold">Size:</span> <span class="size-value"><%= adult.size %></span></div>
+            <div class="mb-1"><span class="font-semibold">Brands:</span> <span class="brands-value"><%= adult.brandsWorkedWith %></span></div>
+            <div class="mb-1"><span class="font-semibold">Last Updated:</span> <%= adult.updatedAt ? adult.updatedAt.toLocaleDateString() : '' %></div>
+            <% if (selectedShootId) { %>
+              <div class="mb-1"><span class="font-semibold">Approval:</span> 
+                <select class="input-gold w-24 approval-input" data-model-type="adult" data-model-id="<%= adult.id %>">
+                  <option value="">Pending</option>
+                  <option value="1" <%= adult.approvalStatus === 1 ? 'selected' : '' %>>Approved</option>
+                  <option value="0" <%= adult.approvalStatus === 0 ? 'selected' : '' %>>Disapproved</option>
+                </select>
+              </div>
+            <% } %>
+            <div class="flex gap-2 mt-2">
+              <button class="btn-red-outline px-3 py-1 rounded delete-btn text-sm" data-model-type="adult" data-model-id="<%= adult.id %>" data-model-name="<%= adult.firstName %> <%= adult.lastName %>">Delete</button>
+            </div>
+            <span class="save-status"></span>
+          </div>
+        </div>
+      <% }); %>
+      <% children.forEach(function(child) { %>
+        <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="child" data-model-id="<%= child.id %>" data-dob="<%= child.childDOB || '' %>">
+          <div class="w-full h-48 bg-gray-200 flex-shrink-0">
+            <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" />
+          </div>
+          <div class="p-4 flex flex-col items-center">
+            <div class="font-bold text-lg mb-1"><%= child.childFirstName %> <%= child.childLastName || '' %></div>
+            <div class="text-xs text-gray-500 mb-2">Child</div>
+            <div class="mb-1"><span class="font-semibold">Gender:</span> <span class="gender-value"><%= child.childGender %></span></div>
+            <% if (child.childDOB) { %>
+              <div class="mb-1"><span class="font-semibold">Age:</span> <span class="age-cell"></span></div>
+            <% } %>
+            <div class="mb-1"><span class="font-semibold">Weight:</span> <span class="weight-value"><%= child.childWeight %></span></div>
+            <div class="mb-1"><span class="font-semibold">Height:</span> <span class="height-value"><%= child.childHeight %></span></div>
+            <div class="mb-1"><span class="font-semibold">Size:</span> <span class="size-value"><%= child.childSize %></span></div>
+            <div class="mb-1"><span class="font-semibold">Brands:</span> <span class="brands-value"><%= child.brandsWorkedWith %></span></div>
+            <div class="mb-1"><span class="font-semibold">Last Updated:</span> <%= child.updatedAt ? child.updatedAt.toLocaleDateString() : '' %></div>
+            <% if (selectedShootId) { %>
+              <div class="mb-1"><span class="font-semibold">Approval:</span> 
+                <select class="input-gold w-24 approval-input" data-model-type="child" data-model-id="<%= child.id %>">
+                  <option value="">Pending</option>
+                  <option value="1" <%= child.approvalStatus === 1 ? 'selected' : '' %>>Approved</option>
+                  <option value="0" <%= child.approvalStatus === 0 ? 'selected' : '' %>>Disapproved</option>
+                </select>
+              </div>
+            <% } %>
+            <div class="flex gap-2 mt-2">
+              <button class="btn-red-outline px-3 py-1 rounded delete-btn text-sm" data-model-type="child" data-model-id="<%= child.id %>" data-model-name="<%= child.childFirstName %> <%= child.childLastName || '' %>">Delete</button>
+            </div>
+            <span class="save-status"></span>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+    <% } %>
+  </div>
+  <script>
+  // Age calculation for each row
+  function calculateAge(dob) {
+    if (!dob) return '';
+    const dobDate = new Date(dob);
+    if (isNaN(dobDate)) return '';
+    const age = Math.floor((Date.now() - dobDate.getTime()) / (365.25*24*60*60*1000));
+    return age;
+  }
+  document.querySelectorAll('tbody tr').forEach(row => {
+    const dobInput = row.querySelector('.dob-input');
+    const ageCell = row.querySelector('.age-cell');
+    if (dobInput) {
+      ageCell.textContent = calculateAge(dobInput.value);
+      dobInput.addEventListener('input', function() {
+        ageCell.textContent = calculateAge(dobInput.value);
+      });
+      dobInput.addEventListener('blur', async function() {
+        const modelType = row.getAttribute('data-model-type');
+        const modelId = row.getAttribute('data-model-id');
+        const newDOB = dobInput.value;
+        const status = row.querySelector('.save-status');
+        status.textContent = 'Saving...';
+        try {
+          const res = await fetch('/admin/models/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ modelType, id: modelId, dob: newDOB })
+          });
+          if (res.ok) {
+            status.textContent = '✔';
+            setTimeout(() => status.textContent = '', 1500);
+          } else {
+            status.textContent = '✖';
+          }
+        } catch (e) {
+          status.textContent = '✖';
+        }
+      });
+    }
+  });
+  // Card view: age calculation and inline DOB editing
+  function cardViewInit() {
+    // Initialize age calculation for cards
+    document.querySelectorAll('.grid > div.bg-white').forEach(card => {
+      const dob = card.getAttribute('data-dob');
+      const ageCell = card.querySelector('.age-cell');
+      if (dob && ageCell) {
+        ageCell.textContent = calculateAge(dob);
+      }
+    });
+    
+    document.querySelectorAll('.dob-input').forEach(input => {
+      if (!input.value) return; // Skip empty DOBs
+      const cardContent = input.closest('.p-4');
+      const ageCell = cardContent ? cardContent.querySelector('.age-cell') : null;
+      function updateAge() {
+        if (ageCell) ageCell.textContent = calculateAge(input.value);
+      }
+      updateAge();
+      input.addEventListener('input', updateAge);
+      input.addEventListener('blur', async function() {
+        const modelType = input.getAttribute('data-model-type');
+        const modelId = input.getAttribute('data-model-id');
+        const newDOB = input.value;
+        const status = cardContent ? cardContent.querySelector('.save-status') : null;
+        if (status) status.textContent = 'Saving...';
+        try {
+          const res = await fetch('/admin/models/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ modelType, id: modelId, dob: newDOB })
+          });
+          if (res.ok) {
+            if (status) status.textContent = '✔';
+            setTimeout(() => { if (status) status.textContent = ''; }, 1500);
+          } else {
+            if (status) status.textContent = '✖';
+          }
+        } catch (e) {
+          if (status) status.textContent = '✖';
+        }
+      });
+    });
+  }
+  if (isCardView) cardViewInit();
+  </script>
+  <script>
+  document.getElementById('toggleView').addEventListener('click', function() {
+    const form = document.getElementById('filterBar');
+    const viewInput = form.querySelector('input[name="view"]');
+    viewInput.value = viewInput.value === 'spreadsheet' ? 'card' : 'spreadsheet';
+    form.submit();
+  });
+  </script>
+  <script>
+  function getCardValue(card, selector) {
+    const el = card.querySelector(selector);
+    return el ? (el.value || el.textContent || '') : '';
+  }
+  function filterCards() {
+    const nameFilter = document.getElementById('filterName').value.toLowerCase();
+    const gender = document.getElementById('filterGender').value.toLowerCase();
+    const minAge = parseInt(document.getElementById('filterMinAge').value) || null;
+    const maxAge = parseInt(document.getElementById('filterMaxAge').value) || null;
+    const minWeight = parseFloat(document.getElementById('filterMinWeight').value) || null;
+    const maxWeight = parseFloat(document.getElementById('filterMaxWeight').value) || null;
+    const minHeight = parseFloat(document.getElementById('filterMinHeight').value) || null;
+    const maxHeight = parseFloat(document.getElementById('filterMaxHeight').value) || null;
+    const minUpdated = document.getElementById('filterMinUpdated').value;
+    const maxUpdated = document.getElementById('filterMaxUpdated').value;
+    const size = document.getElementById('filterSize').value.toLowerCase();
+    const brands = document.getElementById('filterBrands').value.toLowerCase();
+    const excludeBrands = document.getElementById('filterExcludeBrands').value.toLowerCase();
+    const modelType = document.getElementById('filterModelType').value.toLowerCase();
+    const approvalStatus = document.getElementById('filterApprovalStatus').value;
+    const cards = document.querySelectorAll('.grid > div.bg-white');
+    cards.forEach(card => {
+      let show = true;
+      const nameElement = card.querySelector('.font-bold.text-lg');
+      const fullName = nameElement ? nameElement.textContent.trim() : '';
+      const firstName = fullName.split(' ')[0] || '';
+      const lastName = fullName.split(' ').slice(1).join(' ') || '';
+      const type = card.querySelector('.text-xs')?.textContent.trim().toLowerCase();
+      const genderSelect = card.querySelector('.gender-value');
+      const genderVal = genderSelect ? genderSelect.textContent.trim().toLowerCase() : '';
+      const sizeVal = card.querySelector('.size-value')?.textContent.trim().toLowerCase() || '';
+      const weightVal = card.querySelector('.weight-value')?.textContent.trim() || '';
+      const heightVal = card.querySelector('.height-value')?.textContent.trim() || '';
+      const brandsVal = card.querySelector('.brands-value')?.textContent.trim().toLowerCase() || '';
+      const dob = card.getAttribute('data-dob') || '';
+      const ageCell = card.querySelector('.age-cell');
+      const age = ageCell ? parseInt(ageCell.textContent) : (dob ? calculateAge(dob) : null);
+      const lastUpdatedText = card.querySelector('.p-4')?.textContent.match(/Last Updated:\s*([^\n]+)/)?.[1]?.trim() || '';
+      const approvalSelect = card.querySelector('.approval-input');
+      const approvalVal = approvalSelect ? approvalSelect.value : '';
+      
+      // Name filter
+      if (nameFilter && !(firstName.toLowerCase().includes(nameFilter) || lastName.toLowerCase().includes(nameFilter))) show = false;
+      // Gender
+      if (gender) {
+        console.log('Gender filter:', { filterValue: gender, rowValue: genderVal });
+        if (genderVal.trim().toLowerCase() !== gender.trim().toLowerCase()) {
+          console.log('Row hidden due to gender:', { filterValue: gender, rowValue: genderVal });
+          show = false;
+        }
+      }
+      // Model Type
+      if (modelType && type !== modelType) show = false;
+      // Size
+      if (size && sizeVal !== size) show = false;
+      // Brands
+      if (brands && !brandsVal.includes(brands)) show = false;
+      // Exclude Brands
+      if (excludeBrands && brandsVal.includes(excludeBrands)) show = false;
+      // Approval Status - only filter if approval inputs exist (shoot is selected)
+      if (approvalStatus && approvalStatus !== '' && approvalSelect) {
+        if (approvalStatus === 'null' && approvalVal !== '') {
+          show = false;
+        } else if (approvalStatus !== 'null' && approvalVal !== approvalStatus) {
+          show = false;
+        }
+      }
+      // Weight
+      const weightNum = parseFloat(weightVal);
+      if (minWeight && (!weightNum || weightNum < minWeight)) show = false;
+      if (maxWeight && (!weightNum || weightNum > maxWeight)) show = false;
+      // Height (children only)
+      if (card.getAttribute('data-model-type') === 'child') {
+        const heightNum = parseFloat(heightVal);
+        if (minHeight && (!heightNum || heightNum < minHeight)) show = false;
+        if (maxHeight && (!heightNum || heightNum > maxHeight)) show = false;
+      }
+      // Age
+      if (minAge || maxAge) {
+        const ageVal = age;
+        if (ageVal !== null) {
+          if (minAge && ageVal < minAge) show = false;
+          if (maxAge && ageVal > maxAge) show = false;
+        }
+      }
+      // Last Updated filter
+      if (minUpdated && lastUpdatedText) {
+        const updatedDate = new Date(lastUpdatedText);
+        const minDate = new Date(minUpdated);
+        if (!isNaN(updatedDate) && !isNaN(minDate)) {
+          if (updatedDate < minDate) {
+            show = false;
+          }
+        }
+      }
+      if (maxUpdated && lastUpdatedText) {
+        const updatedDate = new Date(lastUpdatedText);
+        const maxDate = new Date(maxUpdated);
+        if (!isNaN(updatedDate) && !isNaN(maxDate)) {
+          if (updatedDate > maxDate) {
+            show = false;
+          }
+        }
+      }
+      card.style.display = show ? '' : 'none';
+    });
+  }
+  // Attach listeners for card view
+  ['filterName','filterGender','filterMinAge','filterMaxAge','filterMinWeight','filterMaxWeight','filterMinHeight','filterMaxHeight','filterSize','filterBrands','filterExcludeBrands','filterModelType','filterMinUpdated','filterMaxUpdated'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function() {
+      if (isCardView) filterCards();
+      else filterTable();
+    });
+  });
+  document.getElementById('resetFilters').addEventListener('click', function() {
+    document.getElementById('filterBar').reset();
+    if (isCardView) filterCards();
+    else filterTable();
+  });
+  if (isCardView) filterCards();
+  </script>
+  <script>
+  // Spreadsheet view inline editing and saving
+  if (!isCardView) {
+    document.querySelectorAll('tbody tr').forEach(row => {
+      const saveBtn = row.querySelector('.save-btn');
+      const status = row.querySelector('.save-status');
+      const modelType = row.getAttribute('data-model-type');
+      const modelId = row.getAttribute('data-model-id');
+      saveBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        const firstName = row.querySelector('.first-name-input').value.trim();
+        const lastName = row.querySelector('.last-name-input').value.trim();
+        const gender = row.querySelector('.gender-input').value;
+        const dob = row.querySelector('.dob-input').value;
+        const weight = row.querySelector('.weight-input').value;
+        const height = row.querySelector('.height-input') ? row.querySelector('.height-input').value : undefined;
+        const size = row.querySelector('.size-input').value;
+        const brands = row.querySelector('.brands-input').value;
+        const phone = row.querySelector('.phone-input').value.trim();
+        const email = row.querySelector('.email-input').value.trim();
+        const preferredContact = row.querySelector('.preferred-contact-input').value.trim();
+        const socialLink = row.querySelector('.social-link-input').value.trim();
+        status.textContent = 'Saving...';
+        try {
+          const body = { modelType, id: modelId, firstName, lastName, gender, dob, weight, height, size, brands, phone, email, preferredContact, socialLink };
+          if (modelType === 'child') body.height = height;
+          const res = await fetch('/admin/models/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+          });
+          if (res.ok) {
+            status.textContent = '✔';
+            setTimeout(() => status.textContent = '', 1500);
+          } else {
+            status.textContent = '✖';
+          }
+        } catch (e) {
+          status.textContent = '✖';
+        }
+      });
+    });
+  }
+  </script>
+  <script>
+  // Sorting logic
+  let currentSort = { column: null, direction: 'asc' };
+  function sortTable(column) {
+    const table = document.querySelector('table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    let colIdx = 0;
+    switch (column) {
+      case 'firstName': colIdx = 2; break;
+      case 'lastName': colIdx = 3; break;
+      case 'type': colIdx = 4; break;
+      case 'gender': colIdx = 5; break;
+      case 'dob': colIdx = 6; break;
+      case 'age': colIdx = 7; break;
+      case 'weight': colIdx = 8; break;
+      case 'height': colIdx = 9; break;
+      case 'size': colIdx = 10; break;
+      case 'brands': colIdx = 11; break;
+      case 'phone': colIdx = 12; break;
+      case 'email': colIdx = 13; break;
+      case 'preferredContact': colIdx = 14; break;
+      case 'socialLink': colIdx = 15; break;
+      case 'updatedAt': colIdx = 16; break;
+      default: colIdx = 2;
+    }
+    rows.sort((a, b) => {
+      let aVal = getCellValue(a, `td:nth-child(${colIdx}) input, td:nth-child(${colIdx}) select, td:nth-child(${colIdx})`);
+      let bVal = getCellValue(b, `td:nth-child(${colIdx}) input, td:nth-child(${colIdx}) select, td:nth-child(${colIdx})`);
+      // For age, weight, height, updatedAt, sort numerically/date
+      if ([7,8,9,16].includes(colIdx)) {
+        aVal = parseFloat(aVal) || 0;
+        bVal = parseFloat(bVal) || 0;
+      }
+      if (colIdx === 6) { // DOB
+        aVal = aVal || '';
+        bVal = bVal || '';
+      }
+      if (colIdx === 16) { // updatedAt
+        aVal = aVal || '';
+        bVal = bVal || '';
+      }
+      if (aVal < bVal) return currentSort.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return currentSort.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    rows.forEach(row => tbody.appendChild(row));
+    // Update sort arrows
+    document.querySelectorAll('th.sortable .sort-arrow').forEach(el => el.textContent = '');
+    const th = document.querySelector(`th[data-sort="${column}"] .sort-arrow`);
+    if (th) th.textContent = currentSort.direction === 'asc' ? '▲' : '▼';
+  }
+  document.querySelectorAll('th.sortable').forEach(th => {
+    th.addEventListener('click', function() {
+      const col = th.getAttribute('data-sort');
+      if (currentSort.column === col) {
+        currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+      } else {
+        currentSort.column = col;
+        currentSort.direction = 'asc';
+      }
+      sortTable(col);
+    });
+  });
+  </script>
+  
+  <script>
+  // Client and Shoot Management
+  document.addEventListener('DOMContentLoaded', function() {
+    const clientSelect = document.getElementById('clientSelect');
+    const shootSelect = document.getElementById('shootSelect');
+    const shootSection = document.getElementById('shootSection');
+    const approvalFilterSection = document.getElementById('approvalFilterSection');
+    const createClientBtn = document.getElementById('createClientBtn');
+    const createShootBtn = document.getElementById('createShootBtn');
+    
+    // Client selection change
+    clientSelect.addEventListener('change', function() {
+      const clientId = this.value;
+      if (clientId) {
+        // Show shoot section and load shoots
+        shootSection.style.display = 'flex';
+        loadShoots(clientId);
+      } else {
+        // Hide shoot section and approval filter
+        shootSection.style.display = 'none';
+        approvalFilterSection.style.display = 'none';
+        shootSelect.innerHTML = '<option value="">Select Shoot</option>';
+      }
+      updateUrl();
+    });
+    
+    // Shoot selection change
+    shootSelect.addEventListener('change', function() {
+      const shootId = this.value;
+      if (shootId) {
+        approvalFilterSection.style.display = 'block';
+        showApprovalColumn();
+        reloadApprovalStatus(shootId); // Reload approval status for the new shoot
+      } else {
+        approvalFilterSection.style.display = 'none';
+        hideApprovalColumn();
+      }
+      updateUrl();
+    });
+    
+    // Show approval column
+    function showApprovalColumn() {
+      const approvalHeader = document.getElementById('approvalHeader');
+      const approvalCells = document.querySelectorAll('.approval-cell');
+      
+      if (approvalHeader) approvalHeader.style.display = 'table-cell';
+      approvalCells.forEach(cell => {
+        cell.style.display = 'table-cell';
+      });
+    }
+    
+    // Hide approval column
+    function hideApprovalColumn() {
+      const approvalHeader = document.getElementById('approvalHeader');
+      const approvalCells = document.querySelectorAll('.approval-cell');
+      
+      if (approvalHeader) approvalHeader.style.display = 'none';
+      approvalCells.forEach(cell => {
+        cell.style.display = 'none';
+      });
+    }
+    
+    // Load shoots for a client
+    async function loadShoots(clientId) {
+      try {
+        const response = await fetch(`/admin/shoots/${clientId}`);
+        const shoots = await response.json();
+        
+        shootSelect.innerHTML = '<option value="">Select Shoot</option>';
+        shoots.forEach(shoot => {
+          const option = document.createElement('option');
+          option.value = shoot.id;
+          option.textContent = shoot.name;
+          shootSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading shoots:', error);
+      }
+    }
+    
+    // Update URL with current selections
+    function updateUrl() {
+      const clientId = clientSelect.value;
+      const shootId = shootSelect.value;
+      const currentUrl = new URL(window.location);
+      
+      if (clientId) {
+        currentUrl.searchParams.set('clientId', clientId);
+      } else {
+        currentUrl.searchParams.delete('clientId');
+      }
+      
+      if (shootId) {
+        currentUrl.searchParams.set('shootId', shootId);
+      } else {
+        currentUrl.searchParams.delete('shootId');
+      }
+      
+      window.history.replaceState({}, '', currentUrl);
+    }
+    
+    // Create new client
+    createClientBtn.addEventListener('click', function() {
+      const name = prompt('Enter client name:');
+      if (!name) return;
+      
+      const email = prompt('Enter client email:');
+      if (!email) return;
+      
+      const password = prompt('Enter client password:');
+      if (!password) return;
+      
+      const ineligibleBrands = prompt('Enter ineligible brands (comma-separated, optional):');
+      
+      createClient(name, email, password, ineligibleBrands ? ineligibleBrands.split(',').map(b => b.trim()) : []);
+    });
+    
+    // Create new shoot
+    createShootBtn.addEventListener('click', function() {
+      const clientId = clientSelect.value;
+      if (!clientId) {
+        alert('Please select a client first');
+        return;
+      }
+      
+      const name = prompt('Enter shoot name:');
+      if (!name) return;
+      
+      const description = prompt('Enter shoot description (optional):');
+      const shootDate = prompt('Enter shoot date (YYYY-MM-DD, optional):');
+      
+      createShoot(clientId, name, description, shootDate);
+    });
+    
+    // API calls
+    async function createClient(name, email, password, ineligibleBrands) {
+      try {
+        const response = await fetch('/admin/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, password, ineligibleBrands })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          alert('Client created successfully!');
+          location.reload(); // Reload to update dropdown
+        } else {
+          const error = await response.json();
+          alert('Error creating client: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Error creating client:', error);
+        alert('Error creating client');
+      }
+    }
+    
+    async function createShoot(clientId, name, description, shootDate) {
+      try {
+        const response = await fetch('/admin/shoots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId, name, description, shootDate })
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          alert('Shoot created successfully!');
+          loadShoots(clientId); // Reload shoots dropdown
+        } else {
+          const error = await response.json();
+          alert('Error creating shoot: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Error creating shoot:', error);
+        alert('Error creating shoot');
+      }
+    }
+    
+    // Handle approval status changes
+    document.addEventListener('change', function(e) {
+      if (e.target.classList.contains('approval-input')) {
+        const modelType = e.target.getAttribute('data-model-type');
+        const modelId = e.target.getAttribute('data-model-id');
+        const approvalStatus = e.target.value;
+        const shootId = shootSelect.value;
+        
+        if (shootId) {
+          updateApprovalStatus(shootId, modelType, modelId, approvalStatus);
+        }
+      }
+    });
+    
+    // Handle delete button clicks
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('delete-btn')) {
+        const modelType = e.target.getAttribute('data-model-type');
+        const modelId = e.target.getAttribute('data-model-id');
+        const modelName = e.target.getAttribute('data-model-name');
+        
+        if (confirm(`Are you sure you want to delete ${modelName}? This action cannot be undone.`)) {
+          deleteModel(modelType, modelId, e.target);
+        }
+      }
+    });
+    
+    // Delete model function
+    async function deleteModel(modelType, modelId, buttonElement) {
+      try {
+        // Disable button and show loading state
+        buttonElement.disabled = true;
+        buttonElement.textContent = 'Deleting...';
+        
+        const response = await fetch('/admin/models/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ modelType, id: modelId })
+        });
+        
+        if (response.ok) {
+          // Remove the row/card from the DOM
+          const row = buttonElement.closest('tr');
+          const card = buttonElement.closest('.bg-white');
+          
+          if (row) {
+            row.remove();
+          } else if (card) {
+            card.remove();
+          }
+          
+          // Show success message
+          alert('Model deleted successfully!');
+        } else {
+          const error = await response.json();
+          alert('Error deleting model: ' + error.error);
+          
+          // Re-enable button
+          buttonElement.disabled = false;
+          buttonElement.textContent = 'Delete';
+        }
+      } catch (error) {
+        console.error('Error deleting model:', error);
+        alert('Error deleting model. Please try again.');
+        
+        // Re-enable button
+        buttonElement.disabled = false;
+        buttonElement.textContent = 'Delete';
+      }
+    }
+    
+    // Update approval status
+    async function updateApprovalStatus(shootId, modelType, modelId, approvalStatus) {
+      try {
+        const response = await fetch('/admin/model-approvals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            shootId, 
+            modelType, 
+            modelId, 
+            approvalStatus: approvalStatus === '' ? null : parseInt(approvalStatus)
+          })
+        });
+        
+        if (response.ok) {
+          console.log('Approval status updated successfully');
+        } else {
+          console.error('Error updating approval status');
+        }
+      } catch (error) {
+        console.error('Error updating approval status:', error);
+      }
+    }
+
+    // Reload approval status for a specific shoot
+    async function reloadApprovalStatus(shootId) {
+      try {
+        const response = await fetch(`/admin/model-approvals/shoot/${shootId}`);
+        const approvals = await response.json();
+        approvals.forEach(approval => {
+          // Update table view
+          const row = document.querySelector(`tr[data-model-type="${approval.modelType}"][data-model-id="${approval.modelId}"]`);
+          if (row) {
+            const approvalInput = row.querySelector('.approval-input');
+            if (approvalInput) {
+              approvalInput.value = approval.approvalStatus === null ? '' : approval.approvalStatus;
+            }
+          }
+          
+          // Update card view
+          const card = document.querySelector(`div[data-model-type="${approval.modelType}"][data-model-id="${approval.modelId}"]`);
+          if (card) {
+            const approvalInput = card.querySelector('.approval-input');
+            if (approvalInput) {
+              approvalInput.value = approval.approvalStatus === null ? '' : approval.approvalStatus;
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Error reloading approval status:', error);
+      }
+    }
+  });
+  </script>
+</body>
+</html> 

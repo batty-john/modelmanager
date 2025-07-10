@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank You</title>
+  <link rel="stylesheet" href="/public/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-gray-200 p-8 rounded-lg shadow-lg w-full max-w-md flex flex-col items-center">
+    <div class="max-w-xl mx-auto p-12">
+      <div class="flex justify-center mb-6">
+        <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" onerror="this.onerror=null;this.src='/public/logo.jpg';">
+      </div>
+    </div>
+    <p class="text-center mb-4">Thank you for your submission!</p>
+    <p class="text-center mb-4">
+      Please follow at <a href="https://www.instagram.com/anniejeanphotography/" class="underline text-blue-700" target="_blank">Annie Jean Photography</a> for future model calls.
+    </p>
+    <p class="text-center mb-4">
+      Should you need to make any updates to your child's information, we have sent an email with instructions to log in.
+    </p>
+    <p class="text-center mb-6">
+      We also often need parents to model with their children.<br>
+      If interested, click the link below.
+    </p>
+    <% 
+      // Build query string for parent info if available
+      let query = '';
+      if (user && (user.parentFirstName || user.parentLastName || user.parentPhone || user.email || user.preferredContact || user.facebookProfileLink || user.instagramProfileLink || typeof user.hasModeledBefore !== 'undefined' || user.brands)) {
+        const params = [];
+        if (user.parentFirstName) params.push('parentFirstName=' + encodeURIComponent(user.parentFirstName));
+        if (user.parentLastName) params.push('parentLastName=' + encodeURIComponent(user.parentLastName));
+        if (user.parentPhone) params.push('parentPhone=' + encodeURIComponent(user.parentPhone));
+        if (user.email) params.push('email=' + encodeURIComponent(user.email));
+        if (user.preferredContact) params.push('preferredContact=' + encodeURIComponent(user.preferredContact));
+        if (user.facebookProfileLink) params.push('facebookProfileLink=' + encodeURIComponent(user.facebookProfileLink));
+        if (user.instagramProfileLink) params.push('instagramProfileLink=' + encodeURIComponent(user.instagramProfileLink));
+        if (typeof user.hasModeledBefore !== 'undefined') params.push('hasModeledBefore=' + encodeURIComponent(user.hasModeledBefore));
+        if (user.brands) params.push('brands=' + encodeURIComponent(user.brands));
+        query = '?' + params.join('&');
+      }
+    %>
+    <a href="/intake/adult<%= query %>" class="btn-gold-gradient px-8 py-2 block w-fit text-center">Adult Model Form</a>
+  </div>
+</body>
+</html> 

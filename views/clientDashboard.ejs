@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Dashboard - <%= client.name %></title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/public/styles.css">
+  <style>
+    .btn-gold-gradient {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      color: white;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    .btn-gold-gradient:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+    }
+    .input-gold {
+      border: 2px solid #fbbf24;
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    .input-gold:focus {
+      outline: none;
+      border-color: #f59e0b;
+      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+    }
+    .approval-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .approval-btn:hover {
+      transform: scale(1.1);
+    }
+    .approval-btn.approved {
+      background-color: #10b981;
+      color: white;
+    }
+    .approval-btn.disapproved {
+      background-color: #ef4444;
+      color: white;
+    }
+    .approval-btn.unreviewed {
+      background-color: #3b82f6;
+      color: white;
+    }
+    .approval-btn.inactive {
+      background-color: #e5e7eb;
+      color: #9ca3af;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="max-w-full xl:max-w-screen-2xl mx-auto p-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Welcome, <%= client.name %></h1>
+        <p class="text-gray-600">Model Review Dashboard</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <button id="logoutBtn" class="btn-gold-gradient px-6 py-2 rounded">Logout</button>
+      </div>
+    </div>
+
+    <!-- Shoot Selection -->
+    <div class="bg-white p-4 rounded shadow mb-6">
+      <div class="flex items-center gap-4">
+        <label class="text-sm font-semibold text-gray-700">Select Shoot:</label>
+        <select id="shootSelect" class="input-gold w-64">
+          <% shoots.forEach(function(shoot) { %>
+            <option value="<%= shoot.id %>" <%= selectedShootId == shoot.id ? 'selected' : '' %>>
+              <%= shoot.name %> <% if (shoot.shootDate) { %>(<%= new Date(shoot.shootDate).toLocaleDateString() %>)<% } %>
+            </option>
+          <% }); %>
+        </select>
+        <button id="createShootBtn" class="btn-gold-gradient px-4 py-2 rounded text-sm">Create New Shoot</button>
+      </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="flex flex-wrap gap-4 bg-white p-4 rounded shadow mb-6">
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Gender</label>
+        <select id="filterGender" class="input-gold w-32">
+          <option value="">All</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Size</label>
+        <select id="filterSize" class="input-gold w-32">
+          <option value="">All</option>
+          <option value="XS">XS</option>
+          <option value="S">S</option>
+          <option value="M">M</option>
+          <option value="L">L</option>
+          <option value="XL">XL</option>
+          <option value="XXL">XXL</option>
+          <option value="3T-4T">3T-4T</option>
+          <option value="5T-6T">5T-6T</option>
+          <option value="7Y-8Y">7Y-8Y</option>
+          <option value="10Y-12Y">10Y-12Y</option>
+        </select>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-gray-700">Approval Status</label>
+        <select id="filterApproval" class="input-gold w-32">
+          <option value="">All</option>
+          <option value="1">Approved</option>
+          <option value="0">Disapproved</option>
+          <option value="null">Unreviewed</option>
+        </select>
+      </div>
+      <div class="flex items-end">
+        <button type="button" id="resetFilters" class="btn-gold-gradient px-6 py-2 rounded">Reset Filters</button>
+      </div>
+    </div>
+
+    <!-- Models Grid -->
+    <div id="modelsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+             <!-- Adult Models -->
+       <% adults.forEach(function(adult) { %>
+         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card" 
+              data-model-type="adult" 
+              data-model-id="<%= adult.id %>"
+              data-gender="<%= adult.gender %>"
+              data-size="<%= adult.size %>"
+              data-approval="<%= adult.approvalStatus %>">
+          <div class="w-full h-48 bg-gray-200 flex-shrink-0">
+            <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" />
+          </div>
+          <div class="p-4 flex flex-col items-center">
+            <div class="font-bold text-lg mb-1 text-center"><%= adult.firstName %></div>
+            <div class="text-xs text-gray-500 mb-2">Adult</div>
+            <div class="mb-1 text-sm"><span class="font-semibold">Gender:</span> <%= adult.gender %></div>
+            <div class="mb-1 text-sm"><span class="font-semibold">Size:</span> <%= adult.size %></div>
+            
+            <!-- Approval Buttons -->
+            <div class="flex gap-2 mt-3">
+              <button class="approval-btn approved" data-status="1" title="Approve">
+                ✓
+              </button>
+              <button class="approval-btn disapproved" data-status="0" title="Disapprove">
+                ✗
+              </button>
+              <button class="approval-btn unreviewed" data-status="null" title="Mark as Unreviewed">
+                —
+              </button>
+            </div>
+            
+            <!-- Current Status Display -->
+            <div class="mt-2 text-sm font-semibold">
+              <% if (adult.approvalStatus === 1) { %>
+                <span class="text-green-600">✓ Approved</span>
+              <% } else if (adult.approvalStatus === 0) { %>
+                <span class="text-red-600">✗ Disapproved</span>
+              <% } else { %>
+                <span class="text-blue-600">— Unreviewed</span>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+
+             <!-- Child Models -->
+       <% children.forEach(function(child) { %>
+         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card" 
+              data-model-type="child" 
+              data-model-id="<%= child.id %>"
+              data-gender="<%= child.childGender %>"
+              data-size="<%= child.childSize %>"
+              data-approval="<%= child.approvalStatus %>">
+          <div class="w-full h-48 bg-gray-200 flex-shrink-0">
+            <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" />
+          </div>
+          <div class="p-4 flex flex-col items-center">
+            <div class="font-bold text-lg mb-1 text-center"><%= child.childFirstName %></div>
+            <div class="text-xs text-gray-500 mb-2">Child</div>
+            <div class="mb-1 text-sm"><span class="font-semibold">Gender:</span> <%= child.childGender %></div>
+            <div class="mb-1 text-sm"><span class="font-semibold">Size:</span> <%= child.childSize %></div>
+            
+            <!-- Approval Buttons -->
+            <div class="flex gap-2 mt-3">
+              <button class="approval-btn approved" data-status="1" title="Approve">
+                ✓
+              </button>
+              <button class="approval-btn disapproved" data-status="0" title="Disapprove">
+                ✗
+              </button>
+              <button class="approval-btn unreviewed" data-status="null" title="Mark as Unreviewed">
+                —
+              </button>
+            </div>
+            
+            <!-- Current Status Display -->
+            <div class="mt-2 text-sm font-semibold">
+              <% if (child.approvalStatus === 1) { %>
+                <span class="text-green-600">✓ Approved</span>
+              <% } else if (child.approvalStatus === 0) { %>
+                <span class="text-red-600">✗ Disapproved</span>
+              <% } else { %>
+                <span class="text-blue-600">— Unreviewed</span>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+
+    <!-- No Models Message -->
+    <div id="noModelsMessage" class="text-center py-12 text-gray-500 hidden">
+      <p class="text-xl">No models found matching your filters.</p>
+    </div>
+  </div>
+
+  <!-- Create Shoot Modal -->
+  <div id="createShootModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+    <div class="bg-white rounded-lg p-6 w-full max-w-md">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold">Create New Shoot</h3>
+        <button id="closeModal" class="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+      </div>
+      
+      <form id="createShootForm" class="space-y-4">
+        <div>
+          <label for="shootName" class="block text-sm font-semibold text-gray-700 mb-2">Shoot Name *</label>
+          <input type="text" id="shootName" name="name" required class="input-gold w-full">
+        </div>
+        
+        <div>
+          <label for="shootDescription" class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+          <textarea id="shootDescription" name="description" rows="3" class="input-gold w-full"></textarea>
+        </div>
+        
+        <div>
+          <label for="shootDate" class="block text-sm font-semibold text-gray-700 mb-2">Shoot Date</label>
+          <input type="date" id="shootDate" name="shootDate" class="input-gold w-full">
+        </div>
+        
+        <div id="modalError" class="text-red-600 text-sm hidden"></div>
+        
+        <div class="flex gap-3 pt-4">
+          <button type="submit" class="btn-gold-gradient px-6 py-2 rounded flex-1">Create Shoot</button>
+          <button type="button" id="cancelCreate" class="bg-gray-300 hover:bg-gray-400 px-6 py-2 rounded flex-1">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const shootSelect = document.getElementById('shootSelect');
+      const filterGender = document.getElementById('filterGender');
+      const filterSize = document.getElementById('filterSize');
+      const filterApproval = document.getElementById('filterApproval');
+      const resetFilters = document.getElementById('resetFilters');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const createShootBtn = document.getElementById('createShootBtn');
+      const createShootModal = document.getElementById('createShootModal');
+      const closeModal = document.getElementById('closeModal');
+      const cancelCreate = document.getElementById('cancelCreate');
+      const createShootForm = document.getElementById('createShootForm');
+      const modalError = document.getElementById('modalError');
+      const modelsGrid = document.getElementById('modelsGrid');
+      const noModelsMessage = document.getElementById('noModelsMessage');
+
+      // Filter models
+      function filterModels() {
+        const gender = filterGender.value;
+        const size = filterSize.value;
+        const approval = filterApproval.value;
+        const shootId = shootSelect.value;
+
+        let visibleCount = 0;
+
+        document.querySelectorAll('.model-card').forEach(card => {
+          let show = true;
+
+          // Gender filter
+          if (gender && card.getAttribute('data-gender') !== gender) {
+            show = false;
+          }
+
+          // Size filter
+          if (size && card.getAttribute('data-size') !== size) {
+            show = false;
+          }
+
+          // Approval filter
+          if (approval !== '') {
+            const cardApproval = card.getAttribute('data-approval');
+            if (approval === 'null' && cardApproval !== 'null') {
+              show = false;
+            } else if (approval !== 'null' && cardApproval !== approval) {
+              show = false;
+            }
+          }
+
+          card.style.display = show ? '' : 'none';
+          if (show) visibleCount++;
+        });
+
+        // Show/hide no models message
+        if (visibleCount === 0) {
+          noModelsMessage.classList.remove('hidden');
+          modelsGrid.classList.add('hidden');
+        } else {
+          noModelsMessage.classList.add('hidden');
+          modelsGrid.classList.remove('hidden');
+        }
+      }
+
+      // Update approval status
+      async function updateApprovalStatus(modelType, modelId, status) {
+        const shootId = shootSelect.value;
+        if (!shootId) return;
+
+        try {
+          const response = await fetch('/client/approval', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              shootId, 
+              modelType, 
+              modelId, 
+              approvalStatus: status === 'null' ? null : parseInt(status)
+            })
+          });
+
+          if (response.ok) {
+            // Update the card's data attribute
+            const card = document.querySelector(`[data-model-type="${modelType}"][data-model-id="${modelId}"]`);
+            if (card) {
+              card.setAttribute('data-approval', status);
+              
+              // Update status display
+              const statusDisplay = card.querySelector('.mt-2.text-sm.font-semibold span');
+              if (statusDisplay) {
+                if (status === '1') {
+                  statusDisplay.textContent = '✓ Approved';
+                  statusDisplay.className = 'text-green-600';
+                } else if (status === '0') {
+                  statusDisplay.textContent = '✗ Disapproved';
+                  statusDisplay.className = 'text-red-600';
+                } else {
+                  statusDisplay.textContent = '— Unreviewed';
+                  statusDisplay.className = 'text-blue-600';
+                }
+              }
+            }
+          } else {
+            console.error('Failed to update approval status');
+          }
+        } catch (error) {
+          console.error('Error updating approval status:', error);
+        }
+      }
+
+      // Event listeners
+      shootSelect.addEventListener('change', function() {
+        const shootId = this.value;
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('shootId', shootId);
+        window.location.href = currentUrl.toString();
+      });
+
+      filterGender.addEventListener('change', filterModels);
+      filterSize.addEventListener('change', filterModels);
+      filterApproval.addEventListener('change', filterModels);
+
+      resetFilters.addEventListener('click', function() {
+        filterGender.value = '';
+        filterSize.value = '';
+        filterApproval.value = '';
+        filterModels();
+      });
+
+      // Approval button clicks
+      document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('approval-btn')) {
+          const card = e.target.closest('.model-card');
+          const modelType = card.getAttribute('data-model-type');
+          const modelId = card.getAttribute('data-model-id');
+          const status = e.target.getAttribute('data-status');
+          
+          updateApprovalStatus(modelType, modelId, status);
+        }
+      });
+
+             // Modal functionality
+       function showModal() {
+         createShootModal.classList.remove('hidden');
+         modalError.classList.add('hidden');
+         createShootForm.reset();
+       }
+       
+       function hideModal() {
+         createShootModal.classList.add('hidden');
+       }
+       
+       // Show modal
+       createShootBtn.addEventListener('click', showModal);
+       
+       // Hide modal
+       closeModal.addEventListener('click', hideModal);
+       cancelCreate.addEventListener('click', hideModal);
+       
+       // Close modal when clicking outside
+       createShootModal.addEventListener('click', function(e) {
+         if (e.target === createShootModal) {
+           hideModal();
+         }
+       });
+       
+       // Create shoot form submission
+       createShootForm.addEventListener('submit', async function(e) {
+         e.preventDefault();
+         
+         const formData = new FormData(createShootForm);
+         const shootData = {
+           name: formData.get('name'),
+           description: formData.get('description'),
+           shootDate: formData.get('shootDate')
+         };
+         
+         try {
+           const response = await fetch('/client/shoots', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify(shootData)
+           });
+           
+           const data = await response.json();
+           
+           if (response.ok) {
+             hideModal();
+             alert('Shoot created successfully!');
+             // Reload the page to show the new shoot
+             location.reload();
+           } else {
+             modalError.textContent = data.error || 'Failed to create shoot';
+             modalError.classList.remove('hidden');
+           }
+         } catch (error) {
+           modalError.textContent = 'Network error. Please try again.';
+           modalError.classList.remove('hidden');
+         }
+       });
+       
+       // Logout
+       logoutBtn.addEventListener('click', async function() {
+         try {
+           const response = await fetch('/client-logout', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' }
+           });
+           
+           if (response.ok) {
+             window.location.href = '/client-login';
+           }
+         } catch (error) {
+           console.error('Logout error:', error);
+         }
+       });
+
+      // Set initial filter values from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('gender')) filterGender.value = urlParams.get('gender');
+      if (urlParams.get('size')) filterSize.value = urlParams.get('size');
+      if (urlParams.get('approvalStatus')) filterApproval.value = urlParams.get('approvalStatus');
+
+      // Initial filter
+      filterModels();
+    });
+  </script>
+</body>
+</html> 

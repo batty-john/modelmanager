@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Family Registration Form</title>
+  <link rel="stylesheet" href="/public/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .profile-pic-container {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      cursor: pointer;
+    }
+    .profile-pic {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #e5e7eb;
+    }
+    .profile-pic-placeholder {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background-color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: #6b7280;
+      border: 2px solid #e5e7eb;
+    }
+    .profile-pic-input {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="max-w-3xl mx-auto p-12 bg-white rounded shadow">
+    <div class="flex justify-center mb-8">
+      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" onerror="this.onerror=null;this.src='/public/logo.jpg';">
+    </div>
+    <h1 class="text-2xl font-bold mb-6 text-center">Child Model Intake Form</h1>
+    <% if (success) { %>
+      <div class="bg-green-100 text-green-800 px-4 py-2 rounded mb-4 text-center"><%= success %></div>
+    <% } %>
+    <% if (errors && errors.length) { %>
+      <div class="bg-red-100 text-red-800 px-4 py-2 rounded mb-4 text-center">
+        <% errors.forEach(function(error) { %>
+          <div><%= error.msg %></div>
+        <% }); %>
+      </div>
+    <% } %>
+    <form id="registrationForm" class="space-y-6" action="<%= dashboardEdit ? '/dashboard/edit-family' : '/intake/child' %>" method="POST" enctype="multipart/form-data" data-initial-children="<%= children && children.length ? children.length : 0 %>">
+      <input type="hidden" name="dashboardEdit" value="<%= dashboardEdit %>">
+      <!-- Parent Section -->
+      <div class="space-y-4">
+        <h2 class="text-lg font-semibold">Parent Information</h2>
+        <div>
+          <label for="parentFirstName" class="block text-sm font-medium text-gray-700">Parent's First Name</label>
+          <input type="text" id="parentFirstName" name="parentFirstName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.parentFirstName : '' %>">
+        </div>
+        <div>
+          <label for="parentLastName" class="block text-sm font-medium text-gray-700">Parent's Last Name</label>
+          <input type="text" id="parentLastName" name="parentLastName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.parentLastName : '' %>">
+        </div>
+        <div>
+          <label for="parentPhone" class="block text-sm font-medium text-gray-700">Parent's Phone</label>
+          <input type="tel" id="parentPhone" name="parentPhone" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.parentPhone : '' %>">
+        </div>
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700">Parent's Email</label>
+          <input type="email" id="email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.email : '' %>">
+        </div>
+      </div>
+
+      <!-- Child Section -->
+      <div id="childSections" class="space-y-4">
+        <h2 class="text-lg font-semibold">Child Information</h2>
+        <% if (children && children.length) { %>
+          <% children.forEach(function(child, index) { %>
+            <div class="child-section border-t pt-4 bg-gray-50 rounded-md p-4 border border-gray-200" data-index="<%= index %>">
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Child's Photo (Smiling, straight at camera)</label>
+                  <% if (child.photo) { %>
+                    <div class="profile-pic-container mx-auto">
+                      <img src="<%= child.photo %>" alt="Child's Photo" class="profile-pic">
+                      <input type="file" id="childPhoto<%= index %>" name="childPhoto<%= index %>" accept="image/*" class="profile-pic-input py-2 px-4">
+                    </div>
+                  <% } else { %>
+                    <div class="profile-pic-container mx-auto">
+                      <div class="profile-pic-placeholder">+</div>
+                      <input type="file" id="childPhoto<%= index %>" name="childPhoto<%= index %>" accept="image/*" required class="profile-pic-input py-2 px-4">
+                    </div>
+                  <% } %>
+                </div>
+                <div>
+                  <label for="childName<%= index %>" class="block text-sm font-medium text-gray-700">Child's Name (First)</label>
+                  <input type="text" id="childName<%= index %>" name="childName<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child.childFirstName %>">
+                </div>
+                <div>
+                  <label for="childDob<%= index %>" class="block text-sm font-medium text-gray-700">Child's Date of Birth</label>
+                  <input type="date" id="childDob<%= index %>" name="childDob<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child.childDOB %>">
+                </div>
+                <div>
+                  <label for="childGender<%= index %>" class="block text-sm font-medium text-gray-700">Child's Gender</label>
+                  <select id="childGender<%= index %>" name="childGender<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+                    <option value="">Select Gender</option>
+                    <option value="male" <%= child.childGender === 'male' ? 'selected' : '' %>>Male</option>
+                    <option value="female" <%= child.childGender === 'female' ? 'selected' : '' %>>Female</option>
+                    <option value="other" <%= child.childGender === 'other' ? 'selected' : '' %>>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label for="childWeight<%= index %>" class="block text-sm font-medium text-gray-700">Child's Weight in lbs (needs to be accurate)</label>
+                  <input type="number" id="childWeight<%= index %>" name="childWeight<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child.childWeight %>">
+                </div>
+                <div>
+                  <label for="childHeight<%= index %>" class="block text-sm font-medium text-gray-700">Child's Height in inches (needs to be accurate)</label>
+                  <input type="number" id="childHeight<%= index %>" name="childHeight<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child.childHeight %>">
+                </div>
+                <div class="flex justify-center">
+                  <button type="button" class="btn-gold-outline px-8 py-2 w-full remove-child">Remove Child</button>
+                </div>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div class="child-section border-t pt-4 bg-gray-50 rounded-md p-4 border border-gray-200" data-index="0">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700">Child's Photo (Smiling, straight at camera)</label>
+                <% if (children && children.length > 0 && children[0].photo) { %>
+                  <div class="profile-pic-container mx-auto">
+                    <img src="<%= children[0].photo %>" alt="Child's Photo" class="profile-pic">
+                    <input type="file" id="childPhoto0" name="childPhoto0" accept="image/*" class="profile-pic-input py-2 px-4">
+                  </div>
+                <% } else { %>
+                  <div class="profile-pic-container mx-auto">
+                    <div class="profile-pic-placeholder">+</div>
+                    <input type="file" id="childPhoto0" name="childPhoto0" accept="image/*" required class="profile-pic-input py-2 px-4">
+                  </div>
+                <% } %>
+              </div>
+              <div>
+                <label for="childName0" class="block text-sm font-medium text-gray-700">Child's Name (First)</label>
+                <input type="text" id="childName0" name="childName0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+              </div>
+              <div>
+                <label for="childDob0" class="block text-sm font-medium text-gray-700">Child's Date of Birth</label>
+                <input type="date" id="childDob0" name="childDob0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+              </div>
+              <div>
+                <label for="childGender0" class="block text-sm font-medium text-gray-700">Child's Gender</label>
+                <select id="childGender0" name="childGender0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+                  <option value="">Select Gender</option>
+                  <option value="male" <%= children && children.length > 0 && children[0].childGender === 'male' ? 'selected' : '' %>>Male</option>
+                  <option value="female" <%= children && children.length > 0 && children[0].childGender === 'female' ? 'selected' : '' %>>Female</option>
+                  <option value="other" <%= children && children.length > 0 && children[0].childGender === 'other' ? 'selected' : '' %>>Other</option>
+                </select>
+              </div>
+              <div>
+                <label for="childWeight0" class="block text-sm font-medium text-gray-700">Child's Weight in lbs (needs to be accurate)</label>
+                <input type="number" id="childWeight0" name="childWeight0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+              </div>
+              <div>
+                <label for="childHeight0" class="block text-sm font-medium text-gray-700">Child's Height in inches (needs to be accurate)</label>
+                <input type="number" id="childHeight0" name="childHeight0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+              </div>
+            </div>
+          </div>
+        <% } %>
+      </div>
+      <div class="flex justify-center">
+        <button type="button" id="addChild" class="btn-gold-outline px-8 py-2 w-full">Add Another Child</button>
+      </div>
+
+      <!-- Additional Fields -->
+      <div class="space-y-4">
+        <div>
+          <label for="preferredContact" class="block text-sm font-medium text-gray-700">Preferred Contact Method</label>
+          <select id="preferredContact" name="preferredContact" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+            <option value="">Select Contact Method</option>
+            <option value="Phone" <%= user && user.preferredContact === 'Phone' ? 'selected' : '' %>>Phone</option>
+            <option value="Facebook" <%= user && user.preferredContact === 'Facebook' ? 'selected' : '' %>>Facebook</option>
+            <option value="Instagram" <%= user && user.preferredContact === 'Instagram' ? 'selected' : '' %>>Instagram</option>
+            <option value="Email" <%= user && user.preferredContact === 'Email' ? 'selected' : '' %>>Email</option>
+          </select>
+        </div>
+        <div id="facebookLink" class="hidden">
+          <label for="facebookProfileLink" class="block text-sm font-medium text-gray-700">Facebook Profile Link</label>
+          <input type="url" id="facebookProfileLink" name="facebookProfileLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.facebookProfileLink : '' %>">
+        </div>
+        <div id="instagramLink" class="hidden">
+          <label for="instagramProfileLink" class="block text-sm font-medium text-gray-700">Instagram Profile Link</label>
+          <input type="url" id="instagramProfileLink" name="instagramProfileLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.instagramProfileLink : '' %>">
+        </div>
+        <div>
+          <label for="hasModeled" class="block text-sm font-medium text-gray-700">Has anyone in your family modeled before?</label>
+          <select id="hasModeled" name="hasModeled" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+            <option value="">Select Option</option>
+            <option value="true" <%= user && user.hasModeledBefore === true ? 'selected' : '' %>>Yes</option>
+            <option value="false" <%= user && user.hasModeledBefore === false ? 'selected' : '' %>>No</option>
+          </select>
+        </div>
+        <div id="brandsWorked" class="hidden">
+          <label for="brands" class="block text-sm font-medium text-gray-700">Brands Your Family Has Worked With</label>
+          <textarea id="brands" name="brands" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
+        </div>
+      </div>
+
+      <button type="submit" class="btn-gold-gradient px-8 py-2 w-full">
+        <%= dashboardEdit ? 'Save Changes' : 'Submit' %>
+      </button>
+    </form>
+  </div>
+
+  <script>
+    // Initialize childIndex based on existing children
+    const form = document.getElementById('registrationForm');
+    let childIndex = parseInt(form.getAttribute('data-initial-children')) || 0;
+    
+    // Add child section dynamically
+    document.getElementById('addChild').addEventListener('click', () => {
+      childIndex++;
+      const childSections = document.getElementById('childSections');
+      const newChildSection = document.createElement('div');
+      newChildSection.classList.add('child-section', 'border-t', 'pt-4', 'bg-gray-50', 'rounded-md', 'p-4', 'border', 'border-gray-200');
+      newChildSection.setAttribute('data-index', childIndex);
+      newChildSection.innerHTML = `
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Child's Photo (Smiling, straight at camera)</label>
+            <div class="profile-pic-container mx-auto">
+              <div class="profile-pic-placeholder">+</div>
+              <input type="file" id="childPhoto${childIndex}" name="childPhoto${childIndex}" accept="image/*" required class="profile-pic-input py-2 px-4">
+            </div>
+          </div>
+          <div>
+            <label for="childName${childIndex}" class="block text-sm font-medium text-gray-700">Child's Name (First)</label>
+            <input type="text" id="childName${childIndex}" name="childName${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+          </div>
+          <div>
+            <label for="childDob${childIndex}" class="block text-sm font-medium text-gray-700">Child's Date of Birth</label>
+            <input type="date" id="childDob${childIndex}" name="childDob${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+          </div>
+          <div>
+            <label for="childGender${childIndex}" class="block text-sm font-medium text-gray-700">Child's Gender</label>
+            <select id="childGender${childIndex}" name="childGender${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+              <option value="">Select Gender</option>
+              <option value="male">Male</option>
+              <option value="female">Female</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label for="childWeight${childIndex}" class="block text-sm font-medium text-gray-700">Child's Weight in lbs (needs to be accurate)</label>
+            <input type="number" id="childWeight${childIndex}" name="childWeight${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+          </div>
+          <div>
+            <label for="childHeight${childIndex}" class="block text-sm font-medium text-gray-700">Child's Height in inches (needs to be accurate)</label>
+            <input type="number" id="childHeight${childIndex}" name="childHeight${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+          </div>
+          <div class="flex justify-center">
+            <button type="button" class="btn-gold-outline px-8 py-2 w-full remove-child">Remove Child</button>
+          </div>
+        </div>
+      `;
+      childSections.appendChild(newChildSection);
+      // Update profile picture preview for new input
+      setupProfilePicPreview(childIndex);
+    });
+
+    // Remove child section
+    document.getElementById('childSections').addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-child')) {
+        e.target.closest('.child-section').remove();
+        // Reindex remaining children to ensure proper form submission
+        reindexChildren();
+      }
+    });
+
+    // Function to reindex children after removal
+    function reindexChildren() {
+      const childSections = document.querySelectorAll('.child-section');
+      childSections.forEach((section, newIndex) => {
+        const oldIndex = section.getAttribute('data-index');
+        section.setAttribute('data-index', newIndex);
+        
+        // Update all input names and IDs
+        const inputs = section.querySelectorAll('input, select');
+        inputs.forEach(input => {
+          const name = input.getAttribute('name');
+          const id = input.getAttribute('id');
+          
+          if (name && name.includes(oldIndex)) {
+            input.setAttribute('name', name.replace(oldIndex, newIndex));
+          }
+          if (id && id.includes(oldIndex)) {
+            input.setAttribute('id', id.replace(oldIndex, newIndex));
+          }
+        });
+        
+        // Update labels
+        const labels = section.querySelectorAll('label');
+        labels.forEach(label => {
+          const forAttr = label.getAttribute('for');
+          if (forAttr && forAttr.includes(oldIndex)) {
+            label.setAttribute('for', forAttr.replace(oldIndex, newIndex));
+          }
+        });
+      });
+    }
+
+    // Show/hide social media links based on contact method
+    document.getElementById('preferredContact').addEventListener('change', (e) => {
+      const facebookLink = document.getElementById('facebookLink');
+      const instagramLink = document.getElementById('instagramLink');
+      facebookLink.classList.add('hidden');
+      instagramLink.classList.add('hidden');
+      if (e.target.value === 'Facebook') {
+        facebookLink.classList.remove('hidden');
+        document.getElementById('facebookProfileLink').required = true;
+        document.getElementById('instagramProfileLink').required = false;
+      } else if (e.target.value === 'Instagram') {
+        instagramLink.classList.remove('hidden');
+        document.getElementById('instagramProfileLink').required = true;
+        document.getElementById('facebookProfileLink').required = false;
+      } else {
+        document.getElementById('facebookProfileLink').required = false;
+        document.getElementById('instagramProfileLink').required = false;
+      }
+    });
+
+    // Show/hide brands worked with based on modeling experience
+    document.getElementById('hasModeled').addEventListener('change', (e) => {
+      const brandsWorked = document.getElementById('brandsWorked');
+      if (e.target.value === 'true') {
+        brandsWorked.classList.remove('hidden');
+        document.getElementById('brands').required = true;
+      } else {
+        brandsWorked.classList.add('hidden');
+        document.getElementById('brands').required = false;
+      }
+    });
+
+    // Show brandsWorked on page load if hasModeled is true
+    window.addEventListener('DOMContentLoaded', () => {
+      const hasModeled = document.getElementById('hasModeled');
+      const brandsWorked = document.getElementById('brandsWorked');
+      if (hasModeled.value === 'true') {
+        brandsWorked.classList.remove('hidden');
+        document.getElementById('brands').required = true;
+      }
+      
+      // Show social media links on page load based on preferred contact
+      const preferredContact = document.getElementById('preferredContact');
+      const facebookLink = document.getElementById('facebookLink');
+      const instagramLink = document.getElementById('instagramLink');
+      
+      if (preferredContact.value === 'Facebook') {
+        facebookLink.classList.remove('hidden');
+        document.getElementById('facebookProfileLink').required = true;
+      } else if (preferredContact.value === 'Instagram') {
+        instagramLink.classList.remove('hidden');
+        document.getElementById('instagramProfileLink').required = true;
+      }
+    });
+
+    // Handle profile picture preview
+    function setupProfilePicPreview(index) {
+      const input = document.getElementById(`childPhoto${index}`);
+      const container = input.parentElement;
+      const placeholder = container.querySelector('.profile-pic-placeholder');
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.classList.add('profile-pic');
+            img.alt = "Child's Photo";
+            placeholder.replaceWith(img);
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    // Initialize profile picture preview for first child
+    setupProfilePicPreview(0);
+  </script>
+</body>
+</html> 

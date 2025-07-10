@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Dashboard</title>
+  <link rel="stylesheet" href="/public/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="max-w-3xl mx-auto p-12">
+    <div class="flex justify-center mb-8">
+      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" onerror="this.onerror=null;this.src='/public/logo.jpg';">
+    </div>
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-2xl font-bold">Welcome, <%= userEmail %>!</h1>
+      <a href="/logout" class="text-indigo-600 hover:underline">Logout</a>
+    </div>
+    <div class="flex justify-between items-center mb-6">
+      <h2 class="text-xl font-semibold">Your Children</h2>
+      <div class="flex gap-2">
+        <a href="/dashboard/edit-family" class="btn-gold-gradient px-8 py-2">Edit Family</a>
+      </div>
+    </div>
+    <% if (children && children.length) { %>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <% children.forEach(child => { %>
+          <div class="bg-white rounded shadow p-4 flex flex-col items-center">
+            <img src="<%= child.photo %>" alt="Child Photo" class="w-24 h-24 rounded-full object-cover mb-2">
+            <div class="font-semibold"><%= child.childFirstName %></div>
+            <div class="text-sm text-gray-600 mb-2">DOB: <%= child.childDOB %></div>
+            <div class="flex gap-2 mt-2">
+              <form action="/dashboard/delete/child/<%= child.id %>" method="POST" onsubmit="return confirm('Are you sure you want to remove this child?');">
+                <button type="submit" class="btn-gold-outline px-8 py-2">Remove</button>
+              </form>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <div class="text-gray-600">No children found.</div>
+    <% } %>
+    <% if (adults && adults.length) { %>
+      <div class="mt-12">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold">Adults</h2>
+          <a href="/dashboard/edit-adult" class="btn-gold-gradient px-8 py-2">Edit Adults</a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <% adults.forEach(adult => { %>
+            <div class="bg-white rounded shadow p-4 flex flex-col items-center">
+              <% if (adult.photo) { %>
+                <img src="<%= adult.photo %>" alt="Adult Photo" class="w-24 h-24 rounded-full object-cover mb-2">
+              <% } %>
+              <div class="font-semibold"><%= adult.firstName %> <%= adult.lastName %></div>
+              <div class="text-sm text-gray-600 mb-2"><%= adult.email %></div>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html> 

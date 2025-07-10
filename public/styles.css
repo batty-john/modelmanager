@@ -1,0 +1,232 @@
+body {
+  background: #fff;
+  font-family: Arial, sans-serif;
+}
+.container {
+  background: #fff;
+  margin: 40px auto;
+  padding: 30px 40px;
+  border-radius: 12px;
+  max-width: 480px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.10);
+}
+.parent-section, .children-section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.child-section {
+  background: #f7f7f7;
+  border-radius: 8px;
+  padding: 18px 16px 12px 16px;
+  margin-bottom: 18px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  position: relative;
+}
+.child-photo-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.child-photo-preview {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: #fffbe6;
+  border: 2px solid #C2882B;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: #C2882B;
+  cursor: pointer;
+  margin-top: 8px;
+  margin-bottom: 8px;
+  transition: border 0.2s;
+}
+.child-photo-preview:hover {
+  border: 2.5px solid #A67C1A;
+}
+.child-fields-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.child-fields-row > div {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+}
+.remove-child-btn {
+  background: #C2882B;
+  color: #fff;
+  border: none;
+  padding: 6px 18px;
+  border-radius: 4px;
+  font-size: 0.98rem;
+  cursor: pointer;
+  margin-top: 10px;
+  position: absolute;
+  right: 16px;
+  top: 16px;
+  transition: background 0.2s;
+}
+.remove-child-btn:hover {
+  background: #A67C1A;
+}
+.add-child-btn {
+  background: #C2882B;
+  color: #fff;
+  border: none;
+  padding: 10px 24px;
+  border-radius: 4px;
+  font-size: 1.08rem;
+  cursor: pointer;
+  margin-bottom: 18px;
+  margin-top: 0;
+  transition: background 0.2s;
+}
+.add-child-btn:hover {
+  background: #A67C1A;
+}
+label {
+  font-weight: 500;
+  margin-bottom: 7px;
+  color: #222;
+}
+input[type="text"],
+input[type="email"],
+input[type="date"],
+input[type="number"],
+select {
+  padding: 9px 12px;
+  border: 1px solid #bbb;
+  border-radius: 4px;
+  margin-bottom: 0;
+  font-size: 1rem;
+  background: #fafafa;
+  transition: border 0.2s;
+}
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+select:focus {
+  border: 1.5px solid #C2882B;
+  outline: none;
+}
+input[type="file"] {
+  margin-top: 4px;
+}
+button[type="submit"] {
+  background: #C2882B;
+  color: #fff;
+  border: none;
+  padding: 12px 0;
+  border-radius: 4px;
+  font-size: 1.08rem;
+  cursor: pointer;
+  margin-top: 10px;
+  width: 100%;
+  transition: background 0.2s;
+}
+button[type="submit"]:hover {
+  background: #A67C1A;
+}
+.success-message {
+  background: #e6f9e6;
+  color: #217a21;
+  border: 1px solid #b6e2b6;
+  padding: 10px 16px;
+  border-radius: 4px;
+  margin-bottom: 18px;
+  font-size: 1rem;
+}
+.error-message {
+  background: #ffeaea;
+  color: #a11a1a;
+  border: 1px solid #e2b6b6;
+  padding: 10px 16px;
+  border-radius: 4px;
+  margin-bottom: 18px;
+  font-size: 1rem;
+}
+
+/* Solid Gold Button (Primary) */
+.btn-gold-gradient {
+  background: #D4A017;
+  color: #fff;
+  border: 2px solid #D4A017;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(212,160,23,0.15);
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: filter 0.2s, box-shadow 0.2s;
+}
+.btn-gold-gradient:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 4px 16px rgba(212,160,23,0.25);
+}
+
+/* Gold Outline Button (Secondary) */
+.btn-gold-outline {
+  background: #fff;
+  color: #D4A017;
+  border: 2px solid #D4A017;
+  border-radius: 9999px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-gold-outline:hover {
+  background: #F7E7A1;
+  color: #222;
+}
+
+/* Red Delete Button */
+.btn-red-outline {
+  background: #fff;
+  color: #dc2626;
+  border: 2px solid #dc2626;
+  border-radius: 9999px;
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: background 0.2s, color 0.2s;
+}
+.btn-red-outline:hover {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+/* Solid Gold Button */
+.btn-gold-solid {
+  background: #D4A017;
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(212,160,23,0.15);
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: filter 0.2s, box-shadow 0.2s;
+}
+.btn-gold-solid:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 4px 16px rgba(212,160,23,0.25);
+}
+
+/* Metallic Gold Button */
+.btn-metallic-gold {
+  background: linear-gradient(90deg, #C79F3A 0%, #F4D03F 50%, #D4A017 100%);
+  color: #fff;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(199,159,58,0.15);
+  padding: 0.75rem 2rem;
+  font-weight: 600;
+  transition: filter 0.2s, box-shadow 0.2s;
+}
+.btn-metallic-gold:hover {
+  filter: brightness(1.10);
+  box-shadow: 0 4px 16px rgba(199,159,58,0.25);
+} 
