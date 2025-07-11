@@ -9,6 +9,11 @@ const ChildModel = require('./ChildModel');
 const AdultModel = require('./AdultModel');
 
 // Define associations
+Client.hasMany(Shoot, {
+  foreignKey: 'clientId',
+  as: 'shoots'
+});
+
 Shoot.belongsTo(Client, {
   foreignKey: 'clientId',
   as: 'client'

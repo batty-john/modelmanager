@@ -74,7 +74,7 @@
         </div>
         <div>
           <label for="parentPhone" class="block text-sm font-medium text-gray-700">Parent's Phone</label>
-          <input type="tel" id="parentPhone" name="parentPhone" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.parentPhone : '' %>">
+          <input type="tel" id="parentPhone" name="parentPhone" required pattern="^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$" inputmode="tel" placeholder="555-555-5555" maxlength="14" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4 modern-phone-input" value="<%= user ? user.parentPhone : '' %>">
         </div>
         <div>
           <label for="email" class="block text-sm font-medium text-gray-700">Parent's Email</label>
@@ -214,7 +214,8 @@
         </div>
         <div id="brandsWorked" class="hidden">
           <label for="brands" class="block text-sm font-medium text-gray-700">Brands Your Family Has Worked With</label>
-          <textarea id="brands" name="brands" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
+          <textarea id="brands" name="brands" placeholder="Enter brand names separated by commas (e.g., Nike, Adidas, Gap, Old Navy)" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
+          <p class="text-xs text-gray-500 mt-1">Separate multiple brands with commas. Example: Nike, Adidas, Gap</p>
         </div>
       </div>
 
@@ -399,6 +400,28 @@
 
     // Initialize profile picture preview for first child
     setupProfilePicPreview(0);
+
+    // Modern phone input: restrict to valid characters and auto-format
+    function setupModernPhoneInputs() {
+      document.querySelectorAll('.modern-phone-input').forEach(function(input) {
+        input.addEventListener('input', function(e) {
+          // Allow only digits, spaces, dashes, parentheses
+          let val = input.value.replace(/[^0-9\-()\s]/g, '');
+          // Limit to US phone number length (10 digits + formatting)
+          if (val.replace(/[^0-9]/g, '').length > 10) {
+            val = val.substring(0, val.length - 1);
+          }
+          // Optionally auto-format (US style)
+          val = val.replace(/(\d{3})(\d{3})(\d{0,4})/, function(_, a, b, c) {
+            if (!b) return a;
+            if (!c) return a + '-' + b;
+            return a + '-' + b + '-' + c;
+          });
+          input.value = val;
+        });
+      });
+    }
+    document.addEventListener('DOMContentLoaded', setupModernPhoneInputs);
   </script>
 </body>
 </html> 

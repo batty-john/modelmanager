@@ -643,14 +643,27 @@ router.post('/admin/models/update', requireAdmin, async (req, res) => {
         adult.lastName = lastNameArr.join(' ');
       }
       if (gender) adult.gender = gender;
-      if (dob !== undefined) adult.dob = dob;
+      if (dob !== undefined) {
+        // Handle empty or invalid date values
+        if (dob === '' || dob === null || dob === 'Invalid date') {
+          adult.dob = null;
+        } else {
+          // Validate the date format
+          const dateObj = new Date(dob);
+          if (isNaN(dateObj.getTime())) {
+            adult.dob = null;
+          } else {
+            adult.dob = dob;
+          }
+        }
+      }
       if (size) adult.size = size;
-      if (brands !== undefined) adult.brandsWorkedWith = brands;
       // Per-user fields
       const userFields = {};
       if (phone !== undefined) userFields.parentPhone = phone;
       if (email !== undefined) userFields.email = email;
       if (preferredContact !== undefined) userFields.preferredContact = preferredContact;
+      if (brands !== undefined) userFields.brands = brands;
       if (socialLink !== undefined) {
         // Save to facebookProfileLink if it looks like Facebook, else Instagram
         if (socialLink.toLowerCase().includes('facebook.com')) userFields.facebookProfileLink = socialLink;
@@ -670,15 +683,28 @@ router.post('/admin/models/update', requireAdmin, async (req, res) => {
         child.childLastName = lastNameArr.join(' ');
       }
       if (gender) child.childGender = gender;
-      if (dob !== undefined) child.childDOB = dob;
+      if (dob !== undefined) {
+        // Handle empty or invalid date values
+        if (dob === '' || dob === null || dob === 'Invalid date') {
+          child.childDOB = null;
+        } else {
+          // Validate the date format
+          const dateObj = new Date(dob);
+          if (isNaN(dateObj.getTime())) {
+            child.childDOB = null;
+          } else {
+            child.childDOB = dob;
+          }
+        }
+      }
       if (weight !== undefined) child.childWeight = weight;
       if (size) child.childSize = size;
-      if (brands !== undefined) child.brandsWorkedWith = brands;
       // Per-user fields
       const userFields = {};
       if (phone !== undefined) userFields.parentPhone = phone;
       if (email !== undefined) userFields.email = email;
       if (preferredContact !== undefined) userFields.preferredContact = preferredContact;
+      if (brands !== undefined) userFields.brands = brands;
       if (socialLink !== undefined) {
         if (socialLink.toLowerCase().includes('facebook.com')) userFields.facebookProfileLink = socialLink;
         else userFields.instagramProfileLink = socialLink;
@@ -886,6 +912,123 @@ router.get('/admin/model-approvals/shoot/:shootId', requireAdmin, async (req, re
   }
 });
 
+// Update Client
+router.post('/admin/clients/update', async (req, res) => {
+  try {
+    const { clientId, name, email, ineligibleBrands } = req.body;
+    
+    const client = await Client.findByPk(clientId);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    await client.update({
+      name: name,
+      email: email,
+      ineligibleBrands: ineligibleBrands
+    });
+
+    res.json({ success: true, message: 'Client updated successfully' });
+  } catch (error) {
+    console.error('Error updating client:', error);
+    res.status(500).json({ error: 'Error updating client' });
+  }
+});
+
+// Reset Client Password
+router.post('/admin/clients/reset-password', async (req, res) => {
+  try {
+    const { clientId, newPassword } = req.body;
+    
+    const client = await Client.findByPk(clientId);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    // Hash the new password
+    const bcrypt = require('bcrypt');
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    await client.update({
+      passwordHash: hashedPassword
+    });
+
+    res.json({ success: true, message: 'Password reset successfully' });
+  } catch (error) {
+    console.error('Error resetting password:', error);
+    res.status(500).json({ error: 'Error resetting password' });
+  }
+});
+
+// Delete Client
+router.post('/admin/clients/delete', async (req, res) => {
+  try {
+    const { clientId } = req.body;
+    
+    const client = await Client.findByPk(clientId);
+    if (!client) {
+      return res.status(404).json({ error: 'Client not found' });
+    }
+
+    // Delete associated shoots first
+    await Shoot.destroy({ where: { clientId: clientId } });
+    
+    // Delete the client
+    await client.destroy();
+
+    res.json({ success: true, message: 'Client deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting client:', error);
+    res.status(500).json({ error: 'Error deleting client' });
+  }
+});
+
+// Update Shoot
+router.post('/admin/shoots/update', async (req, res) => {
+  try {
+    const { shootId, name, description, shootDate } = req.body;
+    
+    const shoot = await Shoot.findByPk(shootId);
+    if (!shoot) {
+      return res.status(404).json({ error: 'Shoot not found' });
+    }
+
+    await shoot.update({
+      name: name,
+      description: description,
+      shootDate: shootDate
+    });
+
+    res.json({ success: true, message: 'Shoot updated successfully' });
+  } catch (error) {
+    console.error('Error updating shoot:', error);
+    res.status(500).json({ error: 'Error updating shoot' });
+  }
+});
+
+// Delete Shoot
+router.post('/admin/shoots/delete', async (req, res) => {
+  try {
+    const { shootId } = req.body;
+    
+    const shoot = await Shoot.findByPk(shootId);
+    if (!shoot) {
+      return res.status(404).json({ error: 'Shoot not found' });
+    }
+
+    // Delete associated model approvals first
+    await ModelApproval.destroy({ where: { shootId: shootId } });
+    
+    // Delete the shoot
+    await shoot.destroy();
+
+    res.json({ success: true, message: 'Shoot deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting shoot:', error);
+    res.status(500).json({ error: 'Error deleting shoot' });
+  }
+});
+
 // Client Dashboard Routes
 
 // GET /client/dashboard - Client dashboard for reviewing models
@@ -1058,6 +1201,32 @@ router.post('/client/shoots', requireClient, async (req, res) => {
   } catch (err) {
     console.error('Error creating shoot:', err);
     res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Client Management Page
+router.get('/admin/clients/manage', async (req, res) => {
+  try {
+    const clients = await Client.findAll({
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Get shoots for each client separately
+    for (let client of clients) {
+      const shoots = await Shoot.findAll({
+        where: { clientId: client.id },
+        order: [['createdAt', 'DESC']]
+      });
+      client.dataValues.shoots = shoots;
+    }
+
+    res.render('adminClients', {
+      clients: clients,
+      user: req.user
+    });
+  } catch (error) {
+    console.error('Error loading client management page:', error);
+    res.status(500).send('Error loading client management page');
   }
 });
 

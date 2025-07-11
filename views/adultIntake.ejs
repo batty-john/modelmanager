@@ -114,7 +114,7 @@
               </div>
               <div class="w-1/2">
                 <label for="phone<%= index %>" class="block text-sm font-medium text-gray-700">Phone</label>
-                <input type="tel" id="phone<%= index %>" name="phone<%= index %>" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4 <%= errors && errors.some(e => e.field === `phone${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= adult.phone %>">
+                <input type="tel" id="phone<%= index %>" name="phone<%= index %>" required pattern="^\\(?([0-9]{3})\\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$" inputmode="tel" placeholder="555-555-5555" maxlength="14" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4 <%= errors && errors.some(e => e.field === `phone${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %> modern-phone-input" value="<%= adult.phone %>">
                 <% if (errors && errors.some(e => e.field === `phone${index}`)) { %>
                   <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `phone${index}`).msg %></div>
                 <% } %>
@@ -200,7 +200,8 @@
         </div>
         <div id="brandsWorked" class="hidden">
           <label for="brands" class="block text-sm font-medium text-gray-700">Brands Your Family Has Worked With</label>
-          <textarea id="brands" name="brands" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
+          <textarea id="brands" name="brands" placeholder="Enter brand names separated by commas (e.g., Nike, Adidas, Gap, Old Navy)" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
+          <p class="text-xs text-gray-500 mt-1">Separate multiple brands with commas. Example: Nike, Adidas, Gap</p>
         </div>
       </div>
       <button type="submit" class="btn-gold-gradient px-8 py-2 w-full mt-8">Submit</button>
@@ -374,6 +375,28 @@
       facebookSection.style.display = 'none';
       instagramSection.style.display = 'none';
     }
+
+    // Modern phone input: restrict to valid characters and auto-format
+    function setupModernPhoneInputs() {
+      document.querySelectorAll('.modern-phone-input').forEach(function(input) {
+        input.addEventListener('input', function(e) {
+          // Allow only digits, spaces, dashes, parentheses
+          let val = input.value.replace(/[^0-9\-()\s]/g, '');
+          // Limit to US phone number length (10 digits + formatting)
+          if (val.replace(/[^0-9]/g, '').length > 10) {
+            val = val.substring(0, val.length - 1);
+          }
+          // Optionally auto-format (US style)
+          val = val.replace(/(\d{3})(\d{3})(\d{0,4})/, function(_, a, b, c) {
+            if (!b) return a;
+            if (!c) return a + '-' + b;
+            return a + '-' + b + '-' + c;
+          });
+          input.value = val;
+        });
+      });
+    }
+    document.addEventListener('DOMContentLoaded', setupModernPhoneInputs);
   </script>
 </body>
 </html> 

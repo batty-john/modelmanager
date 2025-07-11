@@ -12,6 +12,9 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Model Management</h1>
       <div class="flex items-center gap-4">
+        <!-- Client Management Button -->
+        <a href="/admin/clients/manage" class="btn-gold-gradient px-4 py-2 rounded text-sm">Client Management</a>
+        
         <!-- Client Dropdown -->
         <div class="flex items-center gap-2">
           <label class="text-sm font-semibold text-gray-700">Client:</label>
@@ -411,7 +414,7 @@
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <% adults.forEach(function(adult) { %>
         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="adult" data-model-id="<%= adult.id %>" data-dob="<%= adult.dob || '' %>">
-          <div class="w-full h-48 bg-gray-200 flex-shrink-0">
+          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
             <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" />
           </div>
           <div class="p-4 flex flex-col items-center">
@@ -443,7 +446,7 @@
       <% }); %>
       <% children.forEach(function(child) { %>
         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="child" data-model-id="<%= child.id %>" data-dob="<%= child.childDOB || '' %>">
-          <div class="w-full h-48 bg-gray-200 flex-shrink-0">
+          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
             <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" />
           </div>
           <div class="p-4 flex flex-col items-center">

@@ -24,9 +24,9 @@ sequelize.sync({ alter: true })
   .then(() => console.log('Database synced'))
   .catch((err) => console.error('Database sync error:', err));
 
-// Placeholder route
+// Splash page route
 app.get('/', (req, res) => {
-  res.send('Welcome to the Model Intake App');
+  res.render('splash');
 });
 
 // Client login page

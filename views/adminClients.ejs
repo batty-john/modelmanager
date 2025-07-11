@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Client Management</title>
+  <link rel="stylesheet" href="/public/styles.css">
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen">
+  <div class="max-w-full xl:max-w-screen-2xl mx-auto p-8">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Client Management</h1>
+      <div class="flex items-center gap-4">
+        <button id="createClientBtn" class="btn-gold-gradient px-6 py-2 rounded">Create New Client</button>
+        <a href="/admin/models" class="btn-gold-outline px-6 py-2 rounded">Back to Models</a>
+      </div>
+    </div>
+
+    <!-- Clients Table -->
+    <div class="bg-white rounded shadow mb-8">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold">Clients</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gradient-to-r from-yellow-400 to-yellow-200">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Client Name</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Email</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Ineligible Brands</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Shoots Count</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Created</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% clients.forEach(function(client) { %>
+              <tr class="client-row" data-client-id="<%= client.id %>">
+                <td class="px-6 py-4">
+                  <input type="text" value="<%= client.name %>" class="input-gold w-48 client-name-input" />
+                </td>
+                <td class="px-6 py-4">
+                  <input type="email" value="<%= client.email %>" class="input-gold w-48 client-email-input" />
+                </td>
+                <td class="px-6 py-4">
+                  <input type="text" value="<%= (Array.isArray(client.getIneligibleBrands?.()) ? client.getIneligibleBrands().join(', ') : (client.ineligibleBrands ? JSON.parse(client.ineligibleBrands).join(', ') : '')) %>" placeholder="Brands to exclude (comma-separated)" class="input-gold w-64 client-brands-input" />
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900">
+                  <%= client.shoots ? client.shoots.length : 0 %>
+                </td>
+                <td class="px-6 py-4 text-sm text-gray-900">
+                  <%= client.createdAt ? client.createdAt.toLocaleDateString() : '' %>
+                </td>
+                <td class="px-6 py-4">
+                  <div class="flex items-center gap-2">
+                    <button class="btn-gold-outline px-3 py-1 rounded text-sm save-client-btn">Save</button>
+                    <button class="btn-blue-outline px-3 py-1 rounded text-sm reset-password-btn" data-client-id="<%= client.id %>" data-client-name="<%= client.name %>">Reset Password</button>
+                    <button class="btn-red-outline px-3 py-1 rounded text-sm delete-client-btn" data-client-id="<%= client.id %>" data-client-name="<%= client.name %>">Delete</button>
+                    <span class="save-status"></span>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Shoots Table -->
+    <div class="bg-white rounded shadow">
+      <div class="px-6 py-4 border-b border-gray-200">
+        <h2 class="text-lg font-semibold">All Shoots</h2>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gradient-to-r from-yellow-400 to-yellow-200">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Client</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Shoot Name</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Description</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Shoot Date</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Created</th>
+              <th class="px-6 py-3 text-left text-xs font-bold text-gray-700">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <% clients.forEach(function(client) { %>
+              <% if (client.shoots && client.shoots.length > 0) { %>
+                <% client.shoots.forEach(function(shoot) { %>
+                  <tr class="shoot-row" data-shoot-id="<%= shoot.id %>" data-client-id="<%= client.id %>">
+                    <td class="px-6 py-4 text-sm text-gray-900">
+                      <%= client.name %>
+                    </td>
+                    <td class="px-6 py-4">
+                      <input type="text" value="<%= shoot.name %>" class="input-gold w-48 shoot-name-input" />
+                    </td>
+                    <td class="px-6 py-4">
+                      <input type="text" value="<%= shoot.description || '' %>" class="input-gold w-64 shoot-description-input" />
+                    </td>
+                    <td class="px-6 py-4">
+                      <input type="date" value="<%= shoot.shootDate ? shoot.shootDate.toISOString().slice(0,10) : '' %>" class="input-gold w-32 shoot-date-input" />
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900">
+                      <%= shoot.createdAt ? shoot.createdAt.toLocaleDateString() : '' %>
+                    </td>
+                    <td class="px-6 py-4">
+                      <div class="flex items-center gap-2">
+                        <button class="btn-gold-outline px-3 py-1 rounded text-sm save-shoot-btn">Save</button>
+                        <button class="btn-red-outline px-3 py-1 rounded text-sm delete-shoot-btn" data-shoot-id="<%= shoot.id %>" data-shoot-name="<%= shoot.name %>">Delete</button>
+                        <span class="save-status"></span>
+                      </div>
+                    </td>
+                  </tr>
+                <% }); %>
+              <% } %>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Client Modal -->
+  <div id="createClientModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+      <h3 class="text-lg font-semibold mb-4">Create New Client</h3>
+      <form id="createClientForm">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Client Name</label>
+          <input type="text" id="newClientName" required class="input-gold w-full" />
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+          <input type="email" id="newClientEmail" required class="input-gold w-full" />
+        </div>
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+          <input type="password" id="newClientPassword" required class="input-gold w-full" />
+        </div>
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Ineligible Brands (comma-separated)</label>
+          <input type="text" id="newClientBrands" placeholder="Nike, Adidas, Gap" class="input-gold w-full" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancelCreateClient" class="btn-gray-outline px-4 py-2 rounded">Cancel</button>
+          <button type="submit" class="btn-gold-gradient px-4 py-2 rounded">Create Client</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Reset Password Modal -->
+  <div id="resetPasswordModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden flex items-center justify-center">
+    <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+      <h3 class="text-lg font-semibold mb-4">Reset Password</h3>
+      <p class="text-sm text-gray-600 mb-4">Enter a new password for <span id="resetClientName"></span></p>
+      <form id="resetPasswordForm">
+        <input type="hidden" id="resetClientId" />
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+          <input type="password" id="newPassword" required class="input-gold w-full border border-gray-400 bg-white focus:border-yellow-500 focus:ring-2 focus:ring-yellow-300 rounded px-3 py-2" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <button type="button" id="cancelResetPassword" class="btn-gray-outline px-4 py-2 rounded">Cancel</button>
+          <button type="submit" class="btn-blue-gradient px-4 py-2 rounded">Reset Password</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Create Client Modal
+    document.getElementById('createClientBtn').addEventListener('click', function() {
+      document.getElementById('createClientModal').classList.remove('hidden');
+    });
+
+    document.getElementById('cancelCreateClient').addEventListener('click', function() {
+      document.getElementById('createClientModal').classList.add('hidden');
+      document.getElementById('createClientForm').reset();
+    });
+
+    document.getElementById('createClientForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('newClientName').value;
+      const email = document.getElementById('newClientEmail').value;
+      const password = document.getElementById('newClientPassword').value;
+      const ineligibleBrands = document.getElementById('newClientBrands').value;
+
+      try {
+        const response = await fetch('/admin/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            name, 
+            email, 
+            password, 
+            ineligibleBrands: ineligibleBrands ? ineligibleBrands.split(',').map(b => b.trim()) : []
+          })
+        });
+
+        if (response.ok) {
+          alert('Client created successfully!');
+          location.reload();
+        } else {
+          const error = await response.json();
+          alert('Error creating client: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Error creating client:', error);
+        alert('Error creating client');
+      }
+    });
+
+    // Reset Password Modal
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('reset-password-btn')) {
+        const clientId = e.target.getAttribute('data-client-id');
+        const clientName = e.target.getAttribute('data-client-name');
+        
+        document.getElementById('resetClientId').value = clientId;
+        document.getElementById('resetClientName').textContent = clientName;
+        document.getElementById('resetPasswordModal').classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('cancelResetPassword').addEventListener('click', function() {
+      document.getElementById('resetPasswordModal').classList.add('hidden');
+      document.getElementById('resetPasswordForm').reset();
+    });
+
+    document.getElementById('resetPasswordForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const clientId = document.getElementById('resetClientId').value;
+      const newPassword = document.getElementById('newPassword').value;
+
+      try {
+        const response = await fetch('/admin/clients/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId, newPassword })
+        });
+
+        if (response.ok) {
+          alert('Password reset successfully!');
+          document.getElementById('resetPasswordModal').classList.add('hidden');
+          document.getElementById('resetPasswordForm').reset();
+        } else {
+          const error = await response.json();
+          alert('Error resetting password: ' + error.error);
+        }
+      } catch (error) {
+        console.error('Error resetting password:', error);
+        alert('Error resetting password');
+      }
+    });
+
+    // Save Client
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('save-client-btn')) {
+        const row = e.target.closest('.client-row');
+        const clientId = row.getAttribute('data-client-id');
+        const name = row.querySelector('.client-name-input').value.trim();
+        const email = row.querySelector('.client-email-input').value.trim();
+        const ineligibleBrandsRaw = row.querySelector('.client-brands-input').value.trim();
+        const ineligibleBrands = JSON.stringify(ineligibleBrandsRaw.split(',').map(b => b.trim()).filter(Boolean));
+        const status = row.querySelector('.save-status');
+
+        status.textContent = 'Saving...';
+
+        fetch('/admin/clients/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clientId, name, email, ineligibleBrands })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            status.textContent = '✔';
+            setTimeout(() => status.textContent = '', 1500);
+          } else {
+            status.textContent = '✖';
+          }
+        })
+        .catch(error => {
+          console.error('Error saving client:', error);
+          status.textContent = '✖';
+        });
+      }
+    });
+
+    // Delete Client
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('delete-client-btn')) {
+        const clientId = e.target.getAttribute('data-client-id');
+        const clientName = e.target.getAttribute('data-client-name');
+        
+        if (confirm(`Are you sure you want to delete ${clientName}? This will also delete all associated shoots and cannot be undone.`)) {
+          fetch('/admin/clients/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              alert('Client deleted successfully!');
+              location.reload();
+            } else {
+              alert('Error deleting client: ' + data.error);
+            }
+          })
+          .catch(error => {
+            console.error('Error deleting client:', error);
+            alert('Error deleting client');
+          });
+        }
+      }
+    });
+
+    // Save Shoot
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('save-shoot-btn')) {
+        const row = e.target.closest('.shoot-row');
+        const shootId = row.getAttribute('data-shoot-id');
+        const name = row.querySelector('.shoot-name-input').value.trim();
+        const description = row.querySelector('.shoot-description-input').value.trim();
+        const shootDate = row.querySelector('.shoot-date-input').value;
+        const status = row.querySelector('.save-status');
+
+        status.textContent = 'Saving...';
+
+        fetch('/admin/shoots/update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shootId, name, description, shootDate })
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            status.textContent = '✔';
+            setTimeout(() => status.textContent = '', 1500);
+          } else {
+            status.textContent = '✖';
+          }
+        })
+        .catch(error => {
+          console.error('Error saving shoot:', error);
+          status.textContent = '✖';
+        });
+      }
+    });
+
+    // Delete Shoot
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('delete-shoot-btn')) {
+        const shootId = e.target.getAttribute('data-shoot-id');
+        const shootName = e.target.getAttribute('data-shoot-name');
+        
+        if (confirm(`Are you sure you want to delete ${shootName}? This will also delete all associated model approvals and cannot be undone.`)) {
+          fetch('/admin/shoots/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ shootId })
+          })
+          .then(response => response.json())
+          .then(data => {
+            if (data.success) {
+              alert('Shoot deleted successfully!');
+              location.reload();
+            } else {
+              alert('Error deleting shoot: ' + data.error);
+            }
+          })
+          .catch(error => {
+            console.error('Error deleting shoot:', error);
+            alert('Error deleting shoot');
+          });
+        }
+      }
+    });
+  </script>
+</body>
+</html> 

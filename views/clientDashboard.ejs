@@ -135,13 +135,13 @@
     <div id="modelsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
              <!-- Adult Models -->
        <% adults.forEach(function(adult) { %>
-         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card" 
-              data-model-type="adult" 
-              data-model-id="<%= adult.id %>"
-              data-gender="<%= adult.gender %>"
-              data-size="<%= adult.size %>"
-              data-approval="<%= adult.approvalStatus %>">
-          <div class="w-full h-48 bg-gray-200 flex-shrink-0">
+                 <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card" 
+             data-model-type="adult" 
+             data-model-id="<%= adult.id %>"
+             data-gender="<%= adult.gender %>"
+             data-size="<%= adult.size %>"
+             data-approval="<%= adult.approvalStatus %>">
+         <div class="w-full h-64 bg-gray-200 flex-shrink-0">
             <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" />
           </div>
           <div class="p-4 flex flex-col items-center">
@@ -155,11 +155,11 @@
               <button class="approval-btn approved" data-status="1" title="Approve">
                 ✓
               </button>
-              <button class="approval-btn disapproved" data-status="0" title="Disapprove">
-                ✗
-              </button>
               <button class="approval-btn unreviewed" data-status="null" title="Mark as Unreviewed">
                 —
+              </button>
+              <button class="approval-btn disapproved" data-status="0" title="Disapprove">
+                ✗
               </button>
             </div>
             
@@ -179,13 +179,13 @@
 
              <!-- Child Models -->
        <% children.forEach(function(child) { %>
-         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card" 
-              data-model-type="child" 
-              data-model-id="<%= child.id %>"
-              data-gender="<%= child.childGender %>"
-              data-size="<%= child.childSize %>"
-              data-approval="<%= child.approvalStatus %>">
-          <div class="w-full h-48 bg-gray-200 flex-shrink-0">
+                 <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card" 
+             data-model-type="child" 
+             data-model-id="<%= child.id %>"
+             data-gender="<%= child.childGender %>"
+             data-size="<%= child.childSize %>"
+             data-approval="<%= child.approvalStatus %>">
+         <div class="w-full h-64 bg-gray-200 flex-shrink-0">
             <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" />
           </div>
           <div class="p-4 flex flex-col items-center">
@@ -199,11 +199,11 @@
               <button class="approval-btn approved" data-status="1" title="Approve">
                 ✓
               </button>
-              <button class="approval-btn disapproved" data-status="0" title="Disapprove">
-                ✗
-              </button>
               <button class="approval-btn unreviewed" data-status="null" title="Mark as Unreviewed">
                 —
+              </button>
+              <button class="approval-btn disapproved" data-status="0" title="Disapprove">
+                ✗
               </button>
             </div>
             
