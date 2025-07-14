@@ -6,6 +6,7 @@
   <title>Adult Model Intake Form</title>
   <link rel="stylesheet" href="/public/styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/jpeg" href="/public/logo.jpg">
   <style>
     .profile-pic-container {
       position: relative;
@@ -114,7 +115,7 @@
               </div>
               <div class="w-1/2">
                 <label for="phone<%= index %>" class="block text-sm font-medium text-gray-700">Phone</label>
-                <input type="tel" id="phone<%= index %>" name="phone<%= index %>" required pattern="^\\(?([0-9]{3})\\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$" inputmode="tel" placeholder="555-555-5555" maxlength="14" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4 <%= errors && errors.some(e => e.field === `phone${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %> modern-phone-input" value="<%= adult.phone %>">
+                <input type="tel" id="phone<%= index %>" name="phone<%= index %>" required pattern="^\\(?([0-9]{3})\\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$" inputmode="tel" placeholder="555-555-5555" maxlength="14" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4 <%= errors && errors.some(e => e.field === `phone${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %> modern-phone-input" value="<%= adult.phone %>">
                 <% if (errors && errors.some(e => e.field === `phone${index}`)) { %>
                   <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `phone${index}`).msg %></div>
                 <% } %>
@@ -179,14 +180,14 @@
         </div>
         <div class="facebook-link-section" style="display: <%= user && user.preferredContact === 'Facebook' ? 'block' : 'none' %>;">
           <label for="facebookProfileLink" class="block text-sm font-medium text-gray-700">Facebook Profile Link</label>
-          <input type="url" id="facebookProfileLink" name="facebookProfileLink" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4 <%= errors && errors.some(e => e.field === 'facebookProfileLink') ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= user ? user.facebookProfileLink : '' %>">
+          <input type="url" id="facebookProfileLink" name="facebookProfileLink" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4 <%= errors && errors.some(e => e.field === 'facebookProfileLink') ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= user ? user.facebookProfileLink : '' %>">
           <% if (errors && errors.some(e => e.field === 'facebookProfileLink')) { %>
             <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === 'facebookProfileLink').msg %></div>
           <% } %>
         </div>
         <div class="instagram-link-section" style="display: <%= user && user.preferredContact === 'Instagram' ? 'block' : 'none' %>;">
           <label for="instagramProfileLink" class="block text-sm font-medium text-gray-700">Instagram Profile Link</label>
-          <input type="url" id="instagramProfileLink" name="instagramProfileLink" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.instagramProfileLink : '' %>">
+          <input type="url" id="instagramProfileLink" name="instagramProfileLink" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= user ? user.instagramProfileLink : '' %>">
         </div>
       </div>
       <div class="space-y-4">
@@ -200,7 +201,7 @@
         </div>
         <div id="brandsWorked" class="hidden">
           <label for="brands" class="block text-sm font-medium text-gray-700">Brands Your Family Has Worked With</label>
-          <textarea id="brands" name="brands" placeholder="Enter brand names separated by commas (e.g., Nike, Adidas, Gap, Old Navy)" class="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
+          <textarea id="brands" name="brands" placeholder="Enter brand names separated by commas (e.g., Nike, Adidas, Gap, Old Navy)" class="w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
           <p class="text-xs text-gray-500 mt-1">Separate multiple brands with commas. Example: Nike, Adidas, Gap</p>
         </div>
       </div>

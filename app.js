@@ -10,6 +10,16 @@ const adultIntakeRouter = require('./routes/adultIntake');
 
 const app = express();
 
+// Redirect HTTP to HTTPS if FORCE_HTTPS is true
+if (process.env.FORCE_HTTPS === 'true') {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, 'https://' + req.headers.host + req.originalUrl);
+    }
+    next();
+  });
+}
+
 // Middleware
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

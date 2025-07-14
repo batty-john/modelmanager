@@ -6,6 +6,7 @@
   <title>Family Registration Form</title>
   <link rel="stylesheet" href="/public/styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/jpeg" href="/public/logo.jpg">
   <style>
     .profile-pic-container {
       position: relative;
@@ -66,19 +67,19 @@
         <h2 class="text-lg font-semibold">Parent Information</h2>
         <div>
           <label for="parentFirstName" class="block text-sm font-medium text-gray-700">Parent's First Name</label>
-          <input type="text" id="parentFirstName" name="parentFirstName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.parentFirstName : '' %>">
+          <input type="text" id="parentFirstName" name="parentFirstName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= user ? user.parentFirstName : '' %>">
         </div>
         <div>
           <label for="parentLastName" class="block text-sm font-medium text-gray-700">Parent's Last Name</label>
-          <input type="text" id="parentLastName" name="parentLastName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.parentLastName : '' %>">
+          <input type="text" id="parentLastName" name="parentLastName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= user ? user.parentLastName : '' %>">
         </div>
         <div>
           <label for="parentPhone" class="block text-sm font-medium text-gray-700">Parent's Phone</label>
-          <input type="tel" id="parentPhone" name="parentPhone" required pattern="^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$" inputmode="tel" placeholder="555-555-5555" maxlength="14" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4 modern-phone-input" value="<%= user ? user.parentPhone : '' %>">
+          <input type="tel" id="parentPhone" name="parentPhone" required pattern="^\(?([0-9]{3})\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$" inputmode="tel" placeholder="555-555-5555" maxlength="14" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4 modern-phone-input" value="<%= user ? user.parentPhone : '' %>">
         </div>
         <div>
           <label for="email" class="block text-sm font-medium text-gray-700">Parent's Email</label>
-          <input type="email" id="email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.email : '' %>">
+          <input type="email" id="email" name="email" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= user ? user.email : '' %>">
         </div>
       </div>
 
@@ -105,15 +106,15 @@
                 </div>
                 <div>
                   <label for="childName<%= index %>" class="block text-sm font-medium text-gray-700">Child's Name (First)</label>
-                  <input type="text" id="childName<%= index %>" name="childName<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child.childFirstName %>">
+                  <input type="text" id="childName<%= index %>" name="childName<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= child.childFirstName %>">
                 </div>
                 <div>
                   <label for="childDob<%= index %>" class="block text-sm font-medium text-gray-700">Child's Date of Birth</label>
-                  <input type="date" id="childDob<%= index %>" name="childDob<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child.childDOB %>">
+                  <input type="date" id="childDob<%= index %>" name="childDob<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= child.childDOB %>">
                 </div>
                 <div>
                   <label for="childGender<%= index %>" class="block text-sm font-medium text-gray-700">Child's Gender</label>
-                  <select id="childGender<%= index %>" name="childGender<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+                  <select id="childGender<%= index %>" name="childGender<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
                     <option value="">Select Gender</option>
                     <option value="male" <%= child.childGender === 'male' ? 'selected' : '' %>>Male</option>
                     <option value="female" <%= child.childGender === 'female' ? 'selected' : '' %>>Female</option>
@@ -122,11 +123,11 @@
                 </div>
                 <div>
                   <label for="childWeight<%= index %>" class="block text-sm font-medium text-gray-700">Child's Weight in lbs (needs to be accurate)</label>
-                  <input type="number" id="childWeight<%= index %>" name="childWeight<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child.childWeight %>">
+                  <input type="number" id="childWeight<%= index %>" name="childWeight<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= child.childWeight %>">
                 </div>
                 <div>
                   <label for="childHeight<%= index %>" class="block text-sm font-medium text-gray-700">Child's Height in inches (needs to be accurate)</label>
-                  <input type="number" id="childHeight<%= index %>" name="childHeight<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child.childHeight %>">
+                  <input type="number" id="childHeight<%= index %>" name="childHeight<%= index %>" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= child.childHeight %>">
                 </div>
                 <div class="flex justify-center">
                   <button type="button" class="btn-gold-outline px-8 py-2 w-full remove-child">Remove Child</button>
@@ -153,15 +154,15 @@
               </div>
               <div>
                 <label for="childName0" class="block text-sm font-medium text-gray-700">Child's Name (First)</label>
-                <input type="text" id="childName0" name="childName0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+                <input type="text" id="childName0" name="childName0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
               </div>
               <div>
                 <label for="childDob0" class="block text-sm font-medium text-gray-700">Child's Date of Birth</label>
-                <input type="date" id="childDob0" name="childDob0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+                <input type="date" id="childDob0" name="childDob0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
               </div>
               <div>
                 <label for="childGender0" class="block text-sm font-medium text-gray-700">Child's Gender</label>
-                <select id="childGender0" name="childGender0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+                <select id="childGender0" name="childGender0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
                   <option value="">Select Gender</option>
                   <option value="male" <%= children && children.length > 0 && children[0].childGender === 'male' ? 'selected' : '' %>>Male</option>
                   <option value="female" <%= children && children.length > 0 && children[0].childGender === 'female' ? 'selected' : '' %>>Female</option>
@@ -170,11 +171,11 @@
               </div>
               <div>
                 <label for="childWeight0" class="block text-sm font-medium text-gray-700">Child's Weight in lbs (needs to be accurate)</label>
-                <input type="number" id="childWeight0" name="childWeight0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+                <input type="number" id="childWeight0" name="childWeight0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
               </div>
               <div>
                 <label for="childHeight0" class="block text-sm font-medium text-gray-700">Child's Height in inches (needs to be accurate)</label>
-                <input type="number" id="childHeight0" name="childHeight0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+                <input type="number" id="childHeight0" name="childHeight0" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
               </div>
             </div>
           </div>
@@ -188,7 +189,7 @@
       <div class="space-y-4">
         <div>
           <label for="preferredContact" class="block text-sm font-medium text-gray-700">Preferred Contact Method</label>
-          <select id="preferredContact" name="preferredContact" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+          <select id="preferredContact" name="preferredContact" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
             <option value="">Select Contact Method</option>
             <option value="Phone" <%= user && user.preferredContact === 'Phone' ? 'selected' : '' %>>Phone</option>
             <option value="Facebook" <%= user && user.preferredContact === 'Facebook' ? 'selected' : '' %>>Facebook</option>
@@ -198,15 +199,15 @@
         </div>
         <div id="facebookLink" class="hidden">
           <label for="facebookProfileLink" class="block text-sm font-medium text-gray-700">Facebook Profile Link</label>
-          <input type="url" id="facebookProfileLink" name="facebookProfileLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.facebookProfileLink : '' %>">
+          <input type="url" id="facebookProfileLink" name="facebookProfileLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= user ? user.facebookProfileLink : '' %>">
         </div>
         <div id="instagramLink" class="hidden">
           <label for="instagramProfileLink" class="block text-sm font-medium text-gray-700">Instagram Profile Link</label>
-          <input type="url" id="instagramProfileLink" name="instagramProfileLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= user ? user.instagramProfileLink : '' %>">
+          <input type="url" id="instagramProfileLink" name="instagramProfileLink" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= user ? user.instagramProfileLink : '' %>">
         </div>
         <div>
           <label for="hasModeled" class="block text-sm font-medium text-gray-700">Has anyone in your family modeled before?</label>
-          <select id="hasModeled" name="hasModeled" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+          <select id="hasModeled" name="hasModeled" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
             <option value="">Select Option</option>
             <option value="true" <%= user && user.hasModeledBefore === true ? 'selected' : '' %>>Yes</option>
             <option value="false" <%= user && user.hasModeledBefore === false ? 'selected' : '' %>>No</option>
@@ -214,7 +215,7 @@
         </div>
         <div id="brandsWorked" class="hidden">
           <label for="brands" class="block text-sm font-medium text-gray-700">Brands Your Family Has Worked With</label>
-          <textarea id="brands" name="brands" placeholder="Enter brand names separated by commas (e.g., Nike, Adidas, Gap, Old Navy)" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
+          <textarea id="brands" name="brands" placeholder="Enter brand names separated by commas (e.g., Nike, Adidas, Gap, Old Navy)" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4"><%= user ? user.brands : '' %></textarea>
           <p class="text-xs text-gray-500 mt-1">Separate multiple brands with commas. Example: Nike, Adidas, Gap</p>
         </div>
       </div>
@@ -248,15 +249,15 @@
           </div>
           <div>
             <label for="childName${childIndex}" class="block text-sm font-medium text-gray-700">Child's Name (First)</label>
-            <input type="text" id="childName${childIndex}" name="childName${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+            <input type="text" id="childName${childIndex}" name="childName${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
           </div>
           <div>
             <label for="childDob${childIndex}" class="block text-sm font-medium text-gray-700">Child's Date of Birth</label>
-            <input type="date" id="childDob${childIndex}" name="childDob${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+            <input type="date" id="childDob${childIndex}" name="childDob${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
           </div>
           <div>
             <label for="childGender${childIndex}" class="block text-sm font-medium text-gray-700">Child's Gender</label>
-            <select id="childGender${childIndex}" name="childGender${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+            <select id="childGender${childIndex}" name="childGender${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
               <option value="">Select Gender</option>
               <option value="male">Male</option>
               <option value="female">Female</option>
@@ -265,11 +266,11 @@
           </div>
           <div>
             <label for="childWeight${childIndex}" class="block text-sm font-medium text-gray-700">Child's Weight in lbs (needs to be accurate)</label>
-            <input type="number" id="childWeight${childIndex}" name="childWeight${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+            <input type="number" id="childWeight${childIndex}" name="childWeight${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
           </div>
           <div>
             <label for="childHeight${childIndex}" class="block text-sm font-medium text-gray-700">Child's Height in inches (needs to be accurate)</label>
-            <input type="number" id="childHeight${childIndex}" name="childHeight${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+            <input type="number" id="childHeight${childIndex}" name="childHeight${childIndex}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
           </div>
           <div class="flex justify-center">
             <button type="button" class="btn-gold-outline px-8 py-2 w-full remove-child">Remove Child</button>

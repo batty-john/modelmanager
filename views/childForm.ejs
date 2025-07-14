@@ -6,6 +6,7 @@
   <title><%= editing ? 'Edit Child' : 'Add Child' %></title>
   <link rel="stylesheet" href="/public/styles.css">
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" type="image/jpeg" href="/public/logo.jpg">
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
   <div class="max-w-3xl mx-auto p-12">
@@ -23,19 +24,19 @@
           <% if (editing && child && child.photo) { %>
             <img src="<%= child.photo %>" alt="Child Photo" class="w-24 h-24 rounded-full object-cover mb-2">
           <% } %>
-          <input type="file" id="childPhoto" name="childPhoto" accept="image/*" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+          <input type="file" id="childPhoto" name="childPhoto" accept="image/*" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
         </div>
         <div>
           <label for="childFirstName" class="block text-sm font-medium text-gray-700">Child's Name (First)</label>
-          <input type="text" id="childFirstName" name="childFirstName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child ? child.childFirstName : '' %>">
+          <input type="text" id="childFirstName" name="childFirstName" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= child ? child.childFirstName : '' %>">
         </div>
         <div>
           <label for="childDOB" class="block text-sm font-medium text-gray-700">Child's Date of Birth</label>
-          <input type="date" id="childDOB" name="childDOB" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child ? child.childDOB : '' %>">
+          <input type="date" id="childDOB" name="childDOB" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= child ? child.childDOB : '' %>">
         </div>
         <div>
           <label for="childGender" class="block text-sm font-medium text-gray-700">Child's Gender</label>
-          <select id="childGender" name="childGender" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4">
+          <select id="childGender" name="childGender" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
             <option value="">Select Gender</option>
             <option value="male" <%= child && child.childGender === 'male' ? 'selected' : '' %>>Male</option>
             <option value="female" <%= child && child.childGender === 'female' ? 'selected' : '' %>>Female</option>
@@ -44,15 +45,15 @@
         </div>
         <div>
           <label for="childWeight" class="block text-sm font-medium text-gray-700">Child's Weight (lbs)</label>
-          <input type="number" id="childWeight" name="childWeight" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child ? child.childWeight : '' %>">
+          <input type="number" id="childWeight" name="childWeight" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= child ? child.childWeight : '' %>">
         </div>
         <div>
           <label for="childHeight" class="block text-sm font-medium text-gray-700">Child's Height (inches)</label>
-          <input type="number" id="childHeight" name="childHeight" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 py-2 px-4" value="<%= child ? child.childHeight : '' %>">
+          <input type="number" id="childHeight" name="childHeight" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4" value="<%= child ? child.childHeight : '' %>">
         </div>
         <button type="submit" class="btn-gold-gradient px-8 py-2 w-full"><%= editing ? 'Update Child' : 'Add Child' %></button>
       </form>
-      <a href="/dashboard" class="block text-center mt-4 text-[#C2882B] hover:underline">Back to Dashboard</a>
+      <a href="/dashboard" class="block text-center mt-4 text-[#99FAED] hover:underline">Back to Dashboard</a>
     </div>
   </div>
 </body>
