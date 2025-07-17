@@ -27,7 +27,7 @@
         <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
         <input type="password" id="password" name="password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-cyan-500 focus:ring-cyan-500 py-2 px-4">
       </div>
-      <button type="submit" class="btn-gold-gradient px-8 py-2 w-full">
+      <button type="submit" class="btn-gold-gradient px-8 py-2 w-full" id="loginButton">
         <span class="button-text">Login</span>
       </button>
       <div class="text-center mt-4">
@@ -35,6 +35,20 @@
       </div>
     </form>
   </div>
-  <script src="/public/form-handler.js"></script>
+  <script>
+    // Simple loading animation for login form
+    document.querySelector('form').addEventListener('submit', function() {
+      const button = document.getElementById('loginButton');
+      const originalText = button.innerHTML;
+      button.disabled = true;
+      button.innerHTML = '<span class="loading-spinner"></span> Logging in...';
+      
+      // Restore button after 10 seconds in case of errors
+      setTimeout(() => {
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }, 10000);
+    });
+  </script>
 </body>
 </html> 

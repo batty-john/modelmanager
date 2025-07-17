@@ -8,7 +8,8 @@
     "dev": "nodemon app.js",
     "setup": "node setupUploads.js",
     "test-session": "node testSession.js",
-    "test-session-store": "node testSessionStore.js"
+    "test-session-store": "node testSessionStore.js",
+    "test-env": "node testEnv.js"
   },
   "keywords": [],
   "author": "",

@@ -17,18 +17,14 @@ class FormHandler {
   }
 
   setupFormSubmission(form) {
+    // Only handle file upload forms with AJAX
     if (form.enctype === 'multipart/form-data') {
-      // Handle file upload forms with AJAX
       form.addEventListener('submit', (e) => {
         e.preventDefault();
         this.handleFormSubmit(form);
       });
-    } else {
-      // Add loading state to regular forms
-      form.addEventListener('submit', (e) => {
-        this.showFormLoadingState(form);
-      });
     }
+    // Let regular forms submit normally - no AJAX interference
   }
 
   showFormLoadingState(form) {

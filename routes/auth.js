@@ -15,10 +15,41 @@ router.get('/login', (req, res) => {
 router.post('/login', async (req, res) => {
   console.log('Login attempt received');
   console.log('Content-Type:', req.headers['content-type']);
-  console.log('Request body:', req.body);
-  console.log('Request body type:', typeof req.body);
   
-  const { email, password } = req.body || {};
+  // Safely handle req.body
+  let requestBody = req.body;
+  if (!requestBody) {
+    console.log('req.body is undefined - attempting to parse manually');
+    // Try to parse the raw body if middleware failed
+    try {
+      const rawBody = await new Promise((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => {
+          data += chunk;
+        });
+        req.on('end', () => {
+          resolve(data);
+        });
+        req.on('error', reject);
+      });
+      
+      // Parse URL-encoded data
+      const params = new URLSearchParams(rawBody);
+      requestBody = {};
+      for (const [key, value] of params) {
+        requestBody[key] = value;
+      }
+      console.log('Manually parsed body:', requestBody);
+    } catch (parseError) {
+      console.error('Failed to parse request body:', parseError);
+      return res.render('login', { error: 'Invalid request format.' });
+    }
+  } else {
+    console.log('Request body type:', typeof requestBody);
+    console.log('Request body keys:', Object.keys(requestBody || {}));
+  }
+  
+  const { email, password } = requestBody || {};
   
   if (!email || !password) {
     console.log('Missing email or password:', { email: !!email, password: !!password });

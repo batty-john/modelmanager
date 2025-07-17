@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server Test</title>
+</head>
+<body>
+  <h1>Server Configuration Test</h1>
+  
+  <h2>Test Body Parsing</h2>
+  <form action="/test-body" method="POST">
+    <input type="text" name="testField" value="testValue">
+    <button type="submit">Test Body Parsing</button>
+  </form>
+  
+  <h2>Test Login Form</h2>
+  <form action="/login" method="POST">
+    <input type="email" name="email" value="test@example.com">
+    <input type="password" name="password" value="testpassword">
+    <button type="submit">Test Login</button>
+  </form>
+  
+  <div id="results"></div>
+  
+  <script>
+    // Test the body parsing endpoint
+    document.querySelector('form[action="/test-body"]').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = {};
+      formData.forEach((value, key) => {
+        data[key] = value;
+      });
+      
+      try {
+        const response = await fetch('/test-body', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams(data)
+        });
+        
+        const result = await response.json();
+        document.getElementById('results').innerHTML = `
+          <h3>Test Results:</h3>
+          <pre>${JSON.stringify(result, null, 2)}</pre>
+        `;
+      } catch (error) {
+        document.getElementById('results').innerHTML = `
+          <h3>Error:</h3>
+          <pre>${error.message}</pre>
+        `;
+      }
+    });
+  </script>
+</body>
+</html> 
