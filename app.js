@@ -4,6 +4,7 @@ const sequelize = require('./config/database');
 require('dotenv').config();
 const childIntakeRouter = require('./routes/childIntake');
 const session = require('express-session');
+const MySQLStore = require('connect-mysql2')(session);
 const authRouter = require('./routes/auth');
 const dashboardRouter = require('./routes/dashboard');
 const adultIntakeRouter = require('./routes/adultIntake');
@@ -44,11 +45,39 @@ app.get('/client-login', (req, res) => {
   res.render('clientLogin');
 });
 
-app.use(session({
+// Session configuration with MySQL store for production
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'changeme',
   resave: false,
   saveUninitialized: false,
-}));
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+};
+
+// Use MySQL session store in production, MemoryStore in development
+if (process.env.NODE_ENV === 'production') {
+  sessionConfig.store = new MySQLStore({
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT || 3306,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    createDatabaseTable: true,
+    schema: {
+      tableName: 'sessions',
+      columnNames: {
+        session_id: 'session_id',
+        expires: 'expires',
+        data: 'data'
+      }
+    }
+  });
+}
+
+app.use(session(sessionConfig));
 
 app.use('/intake/child', childIntakeRouter);
 app.use('/intake/adult', adultIntakeRouter);
