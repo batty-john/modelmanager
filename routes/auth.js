@@ -83,14 +83,30 @@ router.post('/login', async (req, res) => {
       sessionID: req.sessionID
     });
     
-    // Redirect
-    if (user.isAdmin) {
-      console.log('Redirecting admin to dashboard');
-      return res.redirect('/admin/dashboard');
-    } else {
-      console.log('Redirecting user to dashboard');
-      return res.redirect('/dashboard');
-    }
+    // Force session save and check if it worked
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.render('login', { error: 'Session error. Please try again.' });
+      }
+      
+      console.log('Session saved successfully');
+      console.log('Session after save:', {
+        userId: req.session.userId,
+        userEmail: req.session.userEmail,
+        isAdmin: req.session.isAdmin,
+        sessionID: req.sessionID
+      });
+      
+      // Redirect
+      if (user.isAdmin) {
+        console.log('Redirecting admin to dashboard');
+        return res.redirect('/admin/dashboard');
+      } else {
+        console.log('Redirecting user to dashboard');
+        return res.redirect('/dashboard');
+      }
+    });
   } catch (error) {
     console.error('Login error:', error);
     return res.render('login', { error: 'Server error. Please try again.' });

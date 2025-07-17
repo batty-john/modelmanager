@@ -18,11 +18,13 @@ function requireLogin(req, res, next) {
     userId: req.session.userId,
     userEmail: req.session.userEmail,
     sessionID: req.sessionID,
-    hasSession: !!req.session
+    hasSession: !!req.session,
+    sessionKeys: req.session ? Object.keys(req.session) : []
   });
   
   if (!req.session.userId) {
     console.log('No userId in session, redirecting to login');
+    console.log('Full session object:', req.session);
     return res.redirect('/login');
   }
   console.log('User authenticated, proceeding');

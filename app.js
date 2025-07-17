@@ -68,23 +68,30 @@ const sessionConfig = {
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production',
+    secure: process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production' && process.env.FORCE_HTTPS === 'true',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax'
   }
 };
 
 // Use MySQL session store in production, MemoryStore in development
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production') {
   console.log('Setting up MySQL session store for production');
-  sessionConfig.store = new MySQLStore({
-    host: process.env.DB_HOST,
-    port: process.env.DB_PORT || 3306,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
-    createDatabaseTable: true
-  });
+  try {
+    sessionConfig.store = new MySQLStore({
+      host: process.env.DB_HOST,
+      port: process.env.DB_PORT || 3306,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      createDatabaseTable: true
+    });
+    console.log('✅ MySQL session store created successfully');
+  } catch (error) {
+    console.error('❌ Error creating MySQL session store:', error);
+    console.log('Falling back to MemoryStore');
+  }
 } else {
   console.log('Using MemoryStore for development');
 }
@@ -125,9 +132,44 @@ app.post('/test-body', (req, res) => {
   });
 });
 
+// Session test endpoint
+app.get('/test-session', (req, res) => {
+  console.log('Session test endpoint called');
+  console.log('Session ID:', req.sessionID);
+  console.log('Session data:', req.session);
+  
+  // Set a test value in session
+  req.session.testValue = 'test-' + Date.now();
+  
+  res.json({
+    sessionID: req.sessionID,
+    sessionData: req.session,
+    sessionKeys: Object.keys(req.session || {}),
+    hasSession: !!req.session
+  });
+});
+
+app.get('/test-session-read', (req, res) => {
+  console.log('Session read test endpoint called');
+  console.log('Session ID:', req.sessionID);
+  console.log('Session data:', req.session);
+  
+  res.json({
+    sessionID: req.sessionID,
+    sessionData: req.session,
+    testValue: req.session.testValue,
+    hasSession: !!req.session
+  });
+});
+
 // Client login page
 app.get('/client-login', (req, res) => {
   res.render('clientLogin');
+});
+
+// Session debug page
+app.get('/session-debug', (req, res) => {
+  res.render('sessionDebug');
 });
 
 // Routes - MUST come after middleware

@@ -2,6 +2,8 @@ require('dotenv').config();
 
 console.log('=== Environment Test ===');
 console.log('NODE_ENV:', process.env.NODE_ENV);
+console.log('NODE_ENV (lowercase):', process.env.NODE_ENV ? process.env.NODE_ENV.toLowerCase() : 'undefined');
+console.log('Is Production:', process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production');
 console.log('SESSION_SECRET:', process.env.SESSION_SECRET ? 'SET' : 'NOT SET');
 console.log('DB_HOST:', process.env.DB_HOST);
 console.log('DB_USER:', process.env.DB_USER);
@@ -23,7 +25,7 @@ const sessionConfig = {
   }
 };
 
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production') {
   console.log('\n=== Testing MySQL Session Store ===');
   try {
     sessionConfig.store = new MySQLStore({
