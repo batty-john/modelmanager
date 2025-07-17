@@ -13,24 +13,56 @@ router.get('/login', (req, res) => {
 
 // POST login
 router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  const user = await User.findOne({ where: { email } });
-  if (!user) {
-    return res.render('login', { error: 'Invalid email or password.' });
+  console.log('Login attempt received');
+  console.log('Content-Type:', req.headers['content-type']);
+  console.log('Request body:', req.body);
+  console.log('Request body type:', typeof req.body);
+  
+  const { email, password } = req.body || {};
+  
+  if (!email || !password) {
+    console.log('Missing email or password:', { email: !!email, password: !!password });
+    return res.render('login', { error: 'Email and password are required.' });
   }
-  const isMatch = await bcrypt.compare(password, user.passwordHash);
-  if (!isMatch) {
-    return res.render('login', { error: 'Invalid email or password.' });
-  }
-  // Set session
-  req.session.userId = user.id;
-  req.session.userEmail = user.email;
-  req.session.isAdmin = user.isAdmin || false;
-  // Redirect
-  if (user.isAdmin) {
-    return res.redirect('/admin/dashboard');
-  } else {
-    return res.redirect('/dashboard');
+  
+  try {
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      console.log('User not found:', email);
+      return res.render('login', { error: 'Invalid email or password.' });
+    }
+    
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      console.log('Password mismatch for user:', email);
+      return res.render('login', { error: 'Invalid email or password.' });
+    }
+    
+    console.log('Login successful for user:', email, 'Admin:', user.isAdmin);
+    
+    // Set session
+    req.session.userId = user.id;
+    req.session.userEmail = user.email;
+    req.session.isAdmin = user.isAdmin || false;
+    
+    console.log('Session set:', {
+      userId: req.session.userId,
+      userEmail: req.session.userEmail,
+      isAdmin: req.session.isAdmin,
+      sessionID: req.sessionID
+    });
+    
+    // Redirect
+    if (user.isAdmin) {
+      console.log('Redirecting admin to dashboard');
+      return res.redirect('/admin/dashboard');
+    } else {
+      console.log('Redirecting user to dashboard');
+      return res.redirect('/dashboard');
+    }
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.render('login', { error: 'Server error. Please try again.' });
   }
 });
 

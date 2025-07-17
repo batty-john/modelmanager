@@ -14,9 +14,18 @@ const fs = require('fs'); // Added for file deletion
 
 // Middleware to require login
 function requireLogin(req, res, next) {
+  console.log('requireLogin middleware - Session:', {
+    userId: req.session.userId,
+    userEmail: req.session.userEmail,
+    sessionID: req.sessionID,
+    hasSession: !!req.session
+  });
+  
   if (!req.session.userId) {
+    console.log('No userId in session, redirecting to login');
     return res.redirect('/login');
   }
+  console.log('User authenticated, proceeding');
   next();
 }
 

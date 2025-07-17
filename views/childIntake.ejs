@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Family Registration Form</title>
   <link rel="stylesheet" href="/public/styles.css">
+  <link rel="stylesheet" href="/public/loading.css">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="icon" type="image/jpeg" href="/public/logo.jpg">
   <style>
@@ -220,9 +221,9 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-gold-gradient px-8 py-2 w-full">
-        <%= dashboardEdit ? 'Save Changes' : 'Submit' %>
-      </button>
+          <button type="submit" class="btn-gold-gradient px-8 py-2 w-full">
+      <span class="button-text"><%= dashboardEdit ? 'Save Changes' : 'Submit' %></span>
+    </button>
     </form>
   </div>
 
@@ -424,5 +425,6 @@
     }
     document.addEventListener('DOMContentLoaded', setupModernPhoneInputs);
   </script>
+  <script src="/public/form-handler.js"></script>
 </body>
 </html> 
