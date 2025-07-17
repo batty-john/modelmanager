@@ -4,7 +4,7 @@ const sequelize = require('./config/database');
 require('dotenv').config();
 const childIntakeRouter = require('./routes/childIntake');
 const session = require('express-session');
-const MySQLStore = require('connect-mysql2')(session);
+const MySQLStore = require('express-mysql-session')(session);
 const authRouter = require('./routes/auth');
 const dashboardRouter = require('./routes/dashboard');
 const adultIntakeRouter = require('./routes/adultIntake');
@@ -65,15 +65,7 @@ if (process.env.NODE_ENV === 'production') {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME,
-    createDatabaseTable: true,
-    schema: {
-      tableName: 'sessions',
-      columnNames: {
-        session_id: 'session_id',
-        expires: 'expires',
-        data: 'data'
-      }
-    }
+    createDatabaseTable: true
   });
 }
 
