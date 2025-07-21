@@ -43,7 +43,7 @@ function calculateChildSize(weight, height) {
   return null; // No size determined
 }
 
-// Multer setup for dynamic child photo fields
+// Enhanced multer configuration with error handling
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../public/uploads'));
@@ -53,7 +53,25 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
-const upload = multer({ storage });
+
+const multerConfig = { 
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit for high-res photos
+    files: 10 // Maximum 10 files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+};
+
+const upload = multer(multerConfig);
+const uploadAny = multer(multerConfig).any();
 
 // GET intake form
 router.get('/', (req, res) => {
@@ -62,7 +80,7 @@ router.get('/', (req, res) => {
 
 // POST intake form
 router.post('/',
-  upload.any(), // Accept any file fields
+  uploadAny, // Accept any file fields
   async (req, res) => {
     // Parse parent info (now user-level fields)
     const parentFirstName = req.body.parentFirstName;

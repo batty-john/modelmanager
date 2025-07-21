@@ -8,7 +8,7 @@ const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 
-// Multer setup for adult photo uploads
+// Enhanced multer configuration with error handling
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../public/uploads'));
@@ -18,7 +18,25 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
-const upload = multer({ storage });
+
+const multerConfig = { 
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB limit for high-res photos
+    files: 10 // Maximum 10 files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+};
+
+const upload = multer(multerConfig);
+const uploadAny = multer(multerConfig).any();
 
 // GET /intake/adult
 router.get('/', (req, res) => {
@@ -51,7 +69,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /intake/adult
-router.post('/', upload.any(), async (req, res) => {
+router.post('/', uploadAny, async (req, res) => {
   try {
     console.log('ADULT INTAKE SUBMISSION:', { body: req.body, files: req.files });
     // Parse adults
@@ -275,7 +293,7 @@ router.get('/dashboard/edit-adult', async (req, res) => {
 });
 
 // POST /dashboard/edit-adult
-router.post('/dashboard/edit-adult', upload.any(), async (req, res) => {
+router.post('/dashboard/edit-adult', uploadAny, async (req, res) => {
   try {
     const userId = req.session.userId;
     if (!userId) return res.redirect('/login');

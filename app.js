@@ -39,8 +39,8 @@ app.use((req, res, next) => {
 });
 
 // Body parsing middleware - MUST come before routes
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.json({ limit: '50mb' }));
 
 // Additional body parsing for cPanel compatibility
 app.use((req, res, next) => {

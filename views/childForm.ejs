@@ -56,5 +56,30 @@
       <a href="/dashboard" class="block text-center mt-4 text-[#99FAED] hover:underline">Back to Dashboard</a>
     </div>
   </div>
+  
+  <script>
+    // File size validation
+    function validateFileSize(input) {
+      const maxSize = 50 * 1024 * 1024; // 50MB in bytes
+      const file = input.files[0];
+      
+      if (file && file.size > maxSize) {
+        alert('File is too large. Maximum size is 50MB. Please compress your image or use a smaller file.');
+        input.value = '';
+        return false;
+      }
+      return true;
+    }
+    
+    // Add file size validation to file input
+    document.addEventListener('DOMContentLoaded', function() {
+      const fileInput = document.getElementById('childPhoto');
+      if (fileInput) {
+        fileInput.addEventListener('change', function() {
+          validateFileSize(this);
+        });
+      }
+    });
+  </script>
 </body>
 </html> 

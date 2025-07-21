@@ -93,10 +93,10 @@ const storage = multer.diskStorage({
 });
 
 // Enhanced multer configuration with error handling
-const upload = multer({ 
+const multerConfig = { 
   storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 50 * 1024 * 1024, // 50MB limit for high-res photos
     files: 10 // Maximum 10 files
   },
   fileFilter: (req, file, cb) => {
@@ -107,13 +107,28 @@ const upload = multer({
       cb(new Error('Only image files are allowed'), false);
     }
   }
-}).any();
+};
+
+// Create multer instances for different use cases
+const upload = multer(multerConfig);
+const uploadSingle = multer(multerConfig).single('childPhoto');
+const uploadAny = multer(multerConfig).any();
 
 // Error handling middleware for multer
 const handleMulterError = (err, req, res, next) => {
   if (err instanceof multer.MulterError) {
     console.error('Multer error:', err);
-    return res.status(400).json({ error: 'File upload error: ' + err.message });
+    let errorMessage = 'File upload error: ' + err.message;
+    
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      errorMessage = 'File is too large. Maximum size is 50MB. Please compress your image or use a smaller file.';
+    } else if (err.code === 'LIMIT_FILE_COUNT') {
+      errorMessage = 'Too many files. Maximum is 10 files per upload.';
+    } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      errorMessage = 'Unexpected file field. Please check your form.';
+    }
+    
+    return res.status(400).json({ error: errorMessage });
   } else if (err) {
     console.error('Upload error:', err);
     return res.status(400).json({ error: 'Upload error: ' + err.message });
@@ -139,7 +154,7 @@ router.get('/dashboard/add/child', requireLogin, (req, res) => {
 });
 
 // POST /dashboard/add/child
-router.post('/dashboard/add/child', requireLogin, upload.single('childPhoto'), async (req, res) => {
+router.post('/dashboard/add/child', requireLogin, uploadSingle, async (req, res) => {
   const { childFirstName, childDOB, childGender, childWeight } = req.body;
   if (!childFirstName || !childDOB || !childGender || !childWeight) {
     return res.render('childForm', { editing: false, formAction: '/dashboard/add/child', child: null, error: 'All fields are required.' });
@@ -190,7 +205,7 @@ router.get('/dashboard/edit/child/:id', requireLogin, async (req, res) => {
 });
 
 // POST /dashboard/edit/child/:id
-router.post('/dashboard/edit/child/:id', requireLogin, upload.single('childPhoto'), async (req, res) => {
+router.post('/dashboard/edit/child/:id', requireLogin, uploadSingle, async (req, res) => {
   const { childFirstName, childDOB, childGender, childWeight, childHeight } = req.body;
   const child = await ChildModel.findOne({ where: { id: req.params.id, parentEmail: req.session.userEmail } });
   if (!child) {
@@ -239,7 +254,7 @@ router.get('/dashboard/edit-family', requireLogin, async (req, res) => {
 });
 
 // POST /dashboard/edit-family
-router.post('/dashboard/edit-family', requireLogin, upload.any(), async (req, res) => {
+router.post('/dashboard/edit-family', requireLogin, uploadAny, async (req, res) => {
   // Parse children from form (moved outside try block)
   const childIndices = Object.keys(req.body)
     .filter(key => key.startsWith('childName'))
@@ -449,7 +464,7 @@ router.get('/dashboard/edit-adult', requireLogin, async (req, res) => {
 });
 
 // POST /dashboard/edit-adult
-router.post('/dashboard/edit-adult', requireLogin, upload.any(), async (req, res) => {
+router.post('/dashboard/edit-adult', requireLogin, uploadAny, async (req, res) => {
   try {
     const userId = req.session.userId;
     if (!userId) return res.redirect('/login');
