@@ -31,6 +31,10 @@ app.use((req, res, next) => {
     req.connection.remoteAddress = req.headers['x-forwarded-for'].split(',')[0];
   }
   
+  // Set timeout for cPanel/LiteSpeed
+  req.setTimeout(30000); // 30 seconds
+  res.setTimeout(30000); // 30 seconds
+  
   next();
 });
 
@@ -40,32 +44,17 @@ app.use(express.json({ limit: '10mb' }));
 
 // Additional body parsing for cPanel compatibility
 app.use((req, res, next) => {
-  if (req.method === 'POST' && !req.body) {
-    console.log('Body parsing middleware may have failed, attempting manual parsing');
-    let data = '';
-    req.on('data', chunk => {
-      data += chunk;
-    });
-    req.on('end', () => {
-      try {
-        if (req.headers['content-type']?.includes('application/json')) {
-          req.body = JSON.parse(data);
-        } else {
-          const params = new URLSearchParams(data);
-          req.body = {};
-          for (const [key, value] of params) {
-            req.body[key] = value;
-          }
-        }
-        console.log('Manually parsed body:', req.body);
-      } catch (error) {
-        console.error('Failed to parse body:', error);
-      }
-      next();
-    });
-  } else {
-    next();
+  if (req.headers['content-type'] && req.headers['content-type'].includes('multipart/form-data')) {
+    // Skip body parsing for multipart forms (handled by multer)
+    return next();
   }
+  
+  // Handle large form data for cPanel
+  if (req.headers['content-length'] && parseInt(req.headers['content-length']) > 1000000) {
+    req.setTimeout(60000); // 60 seconds for large forms
+  }
+  
+  next();
 });
 
 // Static files

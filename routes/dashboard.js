@@ -81,7 +81,7 @@ function calculateChildSize(weight, height) {
   return null; // No size determined
 }
 
-// Multer setup for single child photo
+// Multer setup for file uploads
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../public/uploads'));
@@ -91,7 +91,35 @@ const storage = multer.diskStorage({
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
-const upload = multer({ storage });
+
+// Enhanced multer configuration with error handling
+const upload = multer({ 
+  storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+    files: 10 // Maximum 10 files
+  },
+  fileFilter: (req, file, cb) => {
+    // Accept only image files
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'), false);
+    }
+  }
+}).any();
+
+// Error handling middleware for multer
+const handleMulterError = (err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    console.error('Multer error:', err);
+    return res.status(400).json({ error: 'File upload error: ' + err.message });
+  } else if (err) {
+    console.error('Upload error:', err);
+    return res.status(400).json({ error: 'Upload error: ' + err.message });
+  }
+  next();
+};
 
 // GET /dashboard
 router.get('/dashboard', requireLogin, async (req, res) => {
@@ -370,6 +398,7 @@ router.post('/dashboard/edit-family', requireLogin, upload.any(), async (req, re
     }
     res.redirect('/dashboard');
   } catch (err) {
+    console.error('Error in edit-family route:', err);
     // Handle any unexpected errors
     const children = childIndices.map(idx => ({
       childFirstName: req.body[`childName${idx}`] || '',
@@ -392,7 +421,7 @@ router.post('/dashboard/edit-family', requireLogin, upload.any(), async (req, re
     };
     return res.render('childIntake', {
       success: null,
-      errors: [{ msg: 'An error occurred while saving your information.' }],
+      errors: [{ msg: 'An error occurred while saving your information. Please try again.' }],
       user,
       children,
       dashboardEdit: true
