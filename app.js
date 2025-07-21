@@ -21,6 +21,19 @@ if (process.env.FORCE_HTTPS === 'true') {
   });
 }
 
+// LiteSpeed/cPanel proxy handling
+app.use((req, res, next) => {
+  // Trust proxy for cPanel/LiteSpeed
+  req.connection.proxySecure = req.headers['x-forwarded-proto'] === 'https';
+  
+  // Handle LiteSpeed's proxy headers
+  if (req.headers['x-forwarded-for']) {
+    req.connection.remoteAddress = req.headers['x-forwarded-for'].split(',')[0];
+  }
+  
+  next();
+});
+
 // Body parsing middleware - MUST come before routes
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.json({ limit: '10mb' }));
@@ -65,14 +78,18 @@ app.set('views', path.join(__dirname, 'views'));
 // Session configuration with MySQL store for production
 const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'changeme',
-  resave: false,
-  saveUninitialized: false,
+  resave: true, // Changed to true for cPanel/LiteSpeed
+  saveUninitialized: true, // Changed to true for cPanel/LiteSpeed
+  rolling: true, // Extend session on each request
   cookie: {
-    secure: process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production' && process.env.FORCE_HTTPS === 'true',
+    secure: false, // Disabled for cPanel/LiteSpeed compatibility
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax'
-  }
+    sameSite: 'lax',
+    path: '/',
+    domain: process.env.COOKIE_DOMAIN || undefined
+  },
+  name: 'sid' // Use a different session name to avoid conflicts
 };
 
 // Use MySQL session store in production, MemoryStore in development
@@ -85,7 +102,19 @@ if (process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production')
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      createDatabaseTable: true
+      createDatabaseTable: true,
+      // cPanel/LiteSpeed specific settings
+      clearExpired: true,
+      checkExpirationInterval: 900000, // 15 minutes
+      expiration: 86400000, // 24 hours
+      schema: {
+        tableName: 'sessions',
+        columnNames: {
+          session_id: 'session_id',
+          expires: 'expires',
+          data: 'data'
+        }
+      }
     });
     console.log('✅ MySQL session store created successfully');
   } catch (error) {
@@ -102,6 +131,8 @@ app.use(session(sessionConfig));
 // Debug middleware to log requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - Content-Type: ${req.headers['content-type']}`);
+  console.log('Session ID:', req.sessionID);
+  console.log('Cookies:', req.headers.cookie);
   if (req.method === 'POST') {
     console.log('Request body:', req.body);
   }
@@ -158,7 +189,11 @@ app.get('/test-session-read', (req, res) => {
     sessionID: req.sessionID,
     sessionData: req.session,
     testValue: req.session.testValue,
-    hasSession: !!req.session
+    hasSession: !!req.session,
+    cookies: req.headers.cookie,
+    userAgent: req.headers['user-agent'],
+    host: req.headers.host,
+    referer: req.headers.referer
   });
 });
 
