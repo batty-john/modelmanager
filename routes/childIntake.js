@@ -9,6 +9,55 @@ const ChildModel = require('../models/ChildModel');
 const User = require('../models/User');
 const crypto = require('crypto');
 
+// Asynchronous email sending function
+async function sendWelcomeEmailAsync(email, password) {
+  // Use setImmediate to send email asynchronously without blocking the response
+  setImmediate(async () => {
+    try {
+      console.log(`🔄 Sending welcome email to ${email}...`);
+      
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT,
+        secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for 587
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD,
+        },
+      });
+      
+      const loginUrl = process.env.BASE_URL || 'http://localhost:3000';
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Your Annie Jean Photography Login',
+        text: `Thank you for registering!\n\nYou can log in to update your information at: ${loginUrl}/login\n\nEmail: ${email}\nPassword: ${password}\n\nPlease keep this information safe.`
+      };
+      
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Welcome email sent successfully to ${email}`);
+      
+    } catch (error) {
+      console.error(`❌ Failed to send welcome email to ${email}:`, error.message);
+      
+      // Log specific email error details for debugging
+      if (error.code === 'EENVELOPE') {
+        console.error(`📧 Email delivery failed - recipient rejected: ${email}`);
+        console.error(`📧 This usually means the email address doesn't exist or is blacklisted`);
+      } else if (error.code === 'ETIMEDOUT') {
+        console.error(`📧 Email sending timed out for: ${email}`);
+      } else if (error.code === 'ECONNECTION') {
+        console.error(`📧 Email server connection failed`);
+      }
+      
+      // TODO: In production, you might want to:
+      // - Store failed emails in a queue for retry
+      // - Send admin notification about email failures
+      // - Log to external monitoring service
+    }
+  });
+}
+
 // Function to calculate child size based on weight and height
 function calculateChildSize(weight, height) {
   const weightNum = parseFloat(weight);
@@ -43,7 +92,7 @@ function calculateChildSize(weight, height) {
   return null; // No size determined
 }
 
-// Enhanced multer configuration with error handling
+// Enhanced multer configuration with robust error handling
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../public/uploads'));
@@ -57,14 +106,20 @@ const storage = multer.diskStorage({
 const multerConfig = { 
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit for high-res photos
-    files: 10 // Maximum 10 files
+    fileSize: 25 * 1024 * 1024, // 25MB for professional model photos
+    files: 10, // Maximum 10 files
+    fieldSize: 2 * 1024 * 1024, // 2MB for form fields
+    fieldNameSize: 100, // 100 bytes for field names
+    fields: 50 // Maximum 50 non-file fields
   },
   fileFilter: (req, file, cb) => {
+    console.log('Child intake file filter - processing file:', file.originalname, 'mimetype:', file.mimetype);
+    
     // Accept only image files
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
+      console.error('Child intake file rejected - not an image:', file.mimetype);
       cb(new Error('Only image files are allowed'), false);
     }
   }
@@ -72,6 +127,98 @@ const multerConfig = {
 
 const upload = multer(multerConfig);
 const uploadAny = multer(multerConfig).any();
+
+// Enhanced error handling middleware for multer
+const handleMulterError = (err, req, res, next) => {
+  console.error('Child intake multer error handler triggered:', err);
+  
+  if (err instanceof multer.MulterError) {
+    console.error('Child intake multer error details:', {
+      code: err.code,
+      message: err.message,
+      field: err.field
+    });
+    
+    let errorMessage = 'File upload error: ' + err.message;
+    
+    switch (err.code) {
+      case 'LIMIT_FILE_SIZE':
+                 errorMessage = 'File is too large. Maximum size is 25MB. Please compress your image or use a smaller file.';
+        break;
+      case 'LIMIT_FILE_COUNT':
+        errorMessage = 'Too many files. Maximum is 10 files per upload.';
+        break;
+      case 'LIMIT_UNEXPECTED_FILE':
+        errorMessage = 'Unexpected file field. Please check your form configuration.';
+        break;
+      case 'LIMIT_PART_COUNT':
+        errorMessage = 'Too many form parts. Please reduce the number of form fields.';
+        break;
+      case 'LIMIT_FIELD_KEY':
+        errorMessage = 'Field name too long. Please use shorter field names.';
+        break;
+      case 'LIMIT_FIELD_VALUE':
+        errorMessage = 'Field value too large. Please reduce the size of form data.';
+        break;
+      case 'LIMIT_FIELD_COUNT':
+        errorMessage = 'Too many fields. Please reduce the number of form fields.';
+        break;
+      default:
+        errorMessage = `Upload error: ${err.message}`;
+    }
+    
+    return res.render('childIntake', { 
+      success: null, 
+      errors: [{ msg: errorMessage }], 
+      user: null, 
+      children: null, 
+      dashboardEdit: false 
+    });
+  } 
+  
+  // Handle busboy "Unexpected end of form" errors
+  if (err.message && err.message.includes('Unexpected end of form')) {
+    console.error('Child intake busboy "Unexpected end of form" error:', err);
+    return res.render('childIntake', { 
+      success: null, 
+      errors: [{ msg: 'The form submission was interrupted. This can happen due to network issues or if you tried to upload files that are too large. Please try again with smaller files or check your internet connection.' }], 
+      user: null, 
+      children: null, 
+      dashboardEdit: false 
+    });
+  }
+  
+  // Handle other upload-related errors
+  if (err.message && (
+    err.message.includes('ENOENT') || 
+    err.message.includes('EACCES') ||
+    err.message.includes('EMFILE') ||
+    err.message.includes('ENOSPC')
+  )) {
+    console.error('Child intake file system error:', err);
+    return res.render('childIntake', { 
+      success: null, 
+      errors: [{ msg: 'Server error processing file upload. Please try again later.' }], 
+      user: null, 
+      children: null, 
+      dashboardEdit: false 
+    });
+  }
+  
+  // Generic error handler
+  if (err) {
+    console.error('Child intake generic upload error:', err);
+    return res.render('childIntake', { 
+      success: null, 
+      errors: [{ msg: 'An error occurred during file upload. Please try again.' }], 
+      user: null, 
+      children: null, 
+      dashboardEdit: false 
+    });
+  }
+  
+  next();
+};
 
 // GET intake form
 router.get('/', (req, res) => {
@@ -81,6 +228,7 @@ router.get('/', (req, res) => {
 // POST intake form
 router.post('/',
   uploadAny, // Accept any file fields
+  handleMulterError, // Handle upload errors
   async (req, res) => {
     // Parse parent info (now user-level fields)
     const parentFirstName = req.body.parentFirstName;
@@ -202,43 +350,37 @@ router.post('/',
         }
       }
       if (errors.length === 0) {
-        // Send email with login instructions if user was just created
+        // Form submitted successfully - respond immediately
+        const responseData = {
+          success: true,
+          dashboardEdit: req.body.dashboardEdit === 'true'
+        };
+        
+        // Send email asynchronously (don't wait for it)
         if (generatedPassword) {
-          // Setup nodemailer (configure with your SMTP details)
-          const transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST,
-            port: process.env.EMAIL_PORT,
-            secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for 587
-            auth: {
-              user: process.env.EMAIL_USER,
-              pass: process.env.EMAIL_PASSWORD,
-            },
-          });
-          const loginUrl = process.env.BASE_URL || 'http://localhost:3000';
-          const mailOptions = {
-            from: process.env.EMAIL_USER,
-            to: parentEmail,
-            subject: 'Your Annie Jean Photography Login',
-            text: `Thank you for registering!\n\nYou can log in to update your information at: ${loginUrl}/login\n\nEmail: ${parentEmail}\nPassword: ${generatedPassword}\n\nPlease keep this information safe.`
-          };
-          await transporter.sendMail(mailOptions);
+          sendWelcomeEmailAsync(parentEmail, generatedPassword);
         }
+        
         // Check if this is from edit-family context
         if (req.body.dashboardEdit === 'true') {
           return res.redirect('/dashboard');
         }
-        // Instead of redirect, render thankYou with user info
-        return res.render('thankYou', { user: {
-          parentFirstName,
-          parentLastName,
-          parentPhone,
-          email: parentEmail,
-          preferredContact,
-          facebookProfileLink,
-          instagramProfileLink,
-          hasModeledBefore,
-          brands: brandsWorkedWith
-        }});
+        
+        // Build query parameters for thank you page to preserve user data for adult form pre-population
+        const params = new URLSearchParams();
+        if (parentFirstName) params.append('parentFirstName', parentFirstName);
+        if (parentLastName) params.append('parentLastName', parentLastName);
+        if (parentPhone) params.append('parentPhone', parentPhone);
+        if (parentEmail) params.append('email', parentEmail);
+        if (preferredContact) params.append('preferredContact', preferredContact);
+        if (facebookProfileLink) params.append('facebookProfileLink', facebookProfileLink);
+        if (instagramProfileLink) params.append('instagramProfileLink', instagramProfileLink);
+        if (typeof hasModeledBefore !== 'undefined') params.append('hasModeledBefore', hasModeledBefore);
+        if (brandsWorkedWith) params.append('brands', brandsWorkedWith);
+        
+        // Redirect to thank you page with user data for adult form pre-population
+        const queryString = params.toString();
+        return res.redirect(`/intake/child/thank-you${queryString ? '?' + queryString : ''}`);
       }
     } catch (err) {
       console.error('Error saving child to database:', err);
@@ -275,7 +417,25 @@ router.post('/',
 
 // Thank you page route
 router.get('/thank-you', (req, res) => {
-  res.render('thankYou', { user: null });
+  // Reconstruct user object from query parameters for adult form pre-population
+  const user = {
+    parentFirstName: req.query.parentFirstName || null,
+    parentLastName: req.query.parentLastName || null,
+    parentPhone: req.query.parentPhone || null,
+    email: req.query.email || null,
+    preferredContact: req.query.preferredContact || null,
+    facebookProfileLink: req.query.facebookProfileLink || null,
+    instagramProfileLink: req.query.instagramProfileLink || null,
+    hasModeledBefore: req.query.hasModeledBefore === 'true' ? true : (req.query.hasModeledBefore === 'false' ? false : undefined),
+    brands: req.query.brands || null
+  };
+  
+  // Only pass user object if it has actual data
+  const hasUserData = user.parentFirstName || user.parentLastName || user.parentPhone || user.email || 
+                      user.preferredContact || user.facebookProfileLink || user.instagramProfileLink || 
+                      typeof user.hasModeledBefore !== 'undefined' || user.brands;
+  
+  res.render('thankYou', { user: hasUserData ? user : null });
 });
 
 module.exports = router; 

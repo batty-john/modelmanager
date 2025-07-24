@@ -92,47 +92,112 @@ const storage = multer.diskStorage({
   }
 });
 
-// Enhanced multer configuration with error handling
+// Enhanced multer configuration with robust error handling
 const multerConfig = { 
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit for high-res photos
-    files: 10 // Maximum 10 files
+    fileSize: 25 * 1024 * 1024, // 25MB for professional model photos
+    files: 10, // Maximum 10 files
+    fieldSize: 2 * 1024 * 1024, // 2MB for form fields
+    fieldNameSize: 100, // 100 bytes for field names
+    fields: 50 // Maximum 50 non-file fields
   },
   fileFilter: (req, file, cb) => {
+    console.log('File filter - processing file:', file.originalname, 'mimetype:', file.mimetype);
+    
     // Accept only image files
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
+      console.error('File rejected - not an image:', file.mimetype);
       cb(new Error('Only image files are allowed'), false);
     }
   }
 };
 
-// Create multer instances for different use cases
+// Create multer instances for different use cases with error handling
 const upload = multer(multerConfig);
 const uploadSingle = multer(multerConfig).single('childPhoto');
 const uploadAny = multer(multerConfig).any();
 
-// Error handling middleware for multer
+// Enhanced error handling middleware for multer
 const handleMulterError = (err, req, res, next) => {
+  console.error('Multer error handler triggered:', err);
+  
   if (err instanceof multer.MulterError) {
-    console.error('Multer error:', err);
-    let errorMessage = 'File upload error: ' + err.message;
+    console.error('Multer error details:', {
+      code: err.code,
+      message: err.message,
+      field: err.field
+    });
     
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      errorMessage = 'File is too large. Maximum size is 50MB. Please compress your image or use a smaller file.';
-    } else if (err.code === 'LIMIT_FILE_COUNT') {
-      errorMessage = 'Too many files. Maximum is 10 files per upload.';
-    } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
-      errorMessage = 'Unexpected file field. Please check your form.';
+    let errorMessage = 'File upload error: ' + err.message;
+    let statusCode = 400;
+    
+    switch (err.code) {
+      case 'LIMIT_FILE_SIZE':
+                 errorMessage = 'File is too large. Maximum size is 25MB. Please compress your image or use a smaller file.';
+        break;
+      case 'LIMIT_FILE_COUNT':
+        errorMessage = 'Too many files. Maximum is 10 files per upload.';
+        break;
+      case 'LIMIT_UNEXPECTED_FILE':
+        errorMessage = 'Unexpected file field. Please check your form configuration.';
+        break;
+      case 'LIMIT_PART_COUNT':
+        errorMessage = 'Too many form parts. Please reduce the number of form fields.';
+        break;
+      case 'LIMIT_FIELD_KEY':
+        errorMessage = 'Field name too long. Please use shorter field names.';
+        break;
+      case 'LIMIT_FIELD_VALUE':
+        errorMessage = 'Field value too large. Please reduce the size of form data.';
+        break;
+      case 'LIMIT_FIELD_COUNT':
+        errorMessage = 'Too many fields. Please reduce the number of form fields.';
+        break;
+      default:
+        errorMessage = `Upload error: ${err.message}`;
     }
     
-    return res.status(400).json({ error: errorMessage });
-  } else if (err) {
-    console.error('Upload error:', err);
-    return res.status(400).json({ error: 'Upload error: ' + err.message });
+    return res.status(statusCode).render('error', {
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+  } 
+  
+  // Handle busboy "Unexpected end of form" errors
+  if (err.message && err.message.includes('Unexpected end of form')) {
+    console.error('Busboy "Unexpected end of form" error:', err);
+    return res.status(400).render('error', {
+      message: 'The form submission was interrupted. This can happen due to network issues or if you tried to upload files that are too large. Please try again with smaller files or check your internet connection.',
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
   }
+  
+  // Handle other upload-related errors
+  if (err.message && (
+    err.message.includes('ENOENT') || 
+    err.message.includes('EACCES') ||
+    err.message.includes('EMFILE') ||
+    err.message.includes('ENOSPC')
+  )) {
+    console.error('File system error:', err);
+    return res.status(500).render('error', {
+      message: 'Server error processing file upload. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+  }
+  
+  // Generic error handler
+  if (err) {
+    console.error('Generic upload error:', err);
+    return res.status(500).render('error', {
+      message: 'An error occurred during file upload. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+  }
+  
   next();
 };
 
@@ -154,7 +219,7 @@ router.get('/dashboard/add/child', requireLogin, (req, res) => {
 });
 
 // POST /dashboard/add/child
-router.post('/dashboard/add/child', requireLogin, uploadSingle, async (req, res) => {
+router.post('/dashboard/add/child', requireLogin, uploadSingle, handleMulterError, async (req, res) => {
   const { childFirstName, childDOB, childGender, childWeight } = req.body;
   if (!childFirstName || !childDOB || !childGender || !childWeight) {
     return res.render('childForm', { editing: false, formAction: '/dashboard/add/child', child: null, error: 'All fields are required.' });
@@ -205,7 +270,7 @@ router.get('/dashboard/edit/child/:id', requireLogin, async (req, res) => {
 });
 
 // POST /dashboard/edit/child/:id
-router.post('/dashboard/edit/child/:id', requireLogin, uploadSingle, async (req, res) => {
+router.post('/dashboard/edit/child/:id', requireLogin, uploadSingle, handleMulterError, async (req, res) => {
   const { childFirstName, childDOB, childGender, childWeight, childHeight } = req.body;
   const child = await ChildModel.findOne({ where: { id: req.params.id, parentEmail: req.session.userEmail } });
   if (!child) {
@@ -254,7 +319,7 @@ router.get('/dashboard/edit-family', requireLogin, async (req, res) => {
 });
 
 // POST /dashboard/edit-family
-router.post('/dashboard/edit-family', requireLogin, uploadAny, async (req, res) => {
+router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError, async (req, res) => {
   // Parse children from form (moved outside try block)
   const childIndices = Object.keys(req.body)
     .filter(key => key.startsWith('childName'))
@@ -464,7 +529,7 @@ router.get('/dashboard/edit-adult', requireLogin, async (req, res) => {
 });
 
 // POST /dashboard/edit-adult
-router.post('/dashboard/edit-adult', requireLogin, uploadAny, async (req, res) => {
+router.post('/dashboard/edit-adult', requireLogin, uploadAny, handleMulterError, async (req, res) => {
   try {
     const userId = req.session.userId;
     if (!userId) return res.redirect('/login');

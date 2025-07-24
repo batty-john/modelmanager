@@ -116,7 +116,7 @@
               </div>
               <div class="w-1/2">
                 <label for="phone<%= index %>" class="block text-sm font-medium text-gray-700">Phone</label>
-                <input type="tel" id="phone<%= index %>" name="phone<%= index %>" required pattern="^\\(?([0-9]{3})\\)?[-.●]?([0-9]{3})[-.●]?([0-9]{4})$" inputmode="tel" placeholder="555-555-5555" maxlength="14" class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-400 focus:ring-green-400 py-2 px-4 <%= errors && errors.some(e => e.field === `phone${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %> modern-phone-input" value="<%= adult.phone %>">
+                <input type="tel" id="phone<%= index %>" name="phone<%= index %>" required pattern="^\\(?([0-9]{3})\\)?[\\-\\.]?([0-9]{3})[\\-\\.]?([0-9]{4})$" inputmode="tel" placeholder="555-555-5555" maxlength="14" class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-400 focus:ring-green-400 py-2 px-4 <%= errors && errors.some(e => e.field === `phone${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %> modern-phone-input" value="<%= adult.phone %>">
                 <% if (errors && errors.some(e => e.field === `phone${index}`)) { %>
                   <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `phone${index}`).msg %></div>
                 <% } %>

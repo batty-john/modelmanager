@@ -8,6 +8,55 @@ const nodemailer = require('nodemailer');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 
+// Asynchronous email sending function
+async function sendWelcomeEmailAsync(email, password) {
+  // Use setImmediate to send email asynchronously without blocking the response
+  setImmediate(async () => {
+    try {
+      console.log(`🔄 Sending welcome email to ${email}...`);
+      
+      const transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST,
+        port: process.env.EMAIL_PORT,
+        secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for 587
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASSWORD
+        }
+      });
+      
+      const loginUrl = process.env.BASE_URL || 'http://localhost:3000';
+      const mailOptions = {
+        from: process.env.EMAIL_USER,
+        to: email,
+        subject: 'Welcome to Annie Jean Photography',
+        text: `Thank you for registering!\n\nYou can log in to update your information at: ${loginUrl}/login\n\nEmail: ${email}\nPassword: ${password}\n\nPlease keep this information safe.`
+      };
+      
+      await transporter.sendMail(mailOptions);
+      console.log(`✅ Welcome email sent successfully to ${email}`);
+      
+    } catch (error) {
+      console.error(`❌ Failed to send welcome email to ${email}:`, error.message);
+      
+      // Log specific email error details for debugging
+      if (error.code === 'EENVELOPE') {
+        console.error(`📧 Email delivery failed - recipient rejected: ${email}`);
+        console.error(`📧 This usually means the email address doesn't exist or is blacklisted`);
+      } else if (error.code === 'ETIMEDOUT') {
+        console.error(`📧 Email sending timed out for: ${email}`);
+      } else if (error.code === 'ECONNECTION') {
+        console.error(`📧 Email server connection failed`);
+      }
+      
+      // TODO: In production, you might want to:
+      // - Store failed emails in a queue for retry  
+      // - Send admin notification about email failures
+      // - Log to external monitoring service
+    }
+  });
+}
+
 // Enhanced multer configuration with error handling
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -22,14 +71,20 @@ const storage = multer.diskStorage({
 const multerConfig = { 
   storage,
   limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit for high-res photos
-    files: 10 // Maximum 10 files
+    fileSize: 25 * 1024 * 1024, // 25MB for professional model photos
+    files: 10, // Maximum 10 files
+    fieldSize: 2 * 1024 * 1024, // 2MB for form fields
+    fieldNameSize: 100, // 100 bytes for field names
+    fields: 50 // Maximum 50 non-file fields
   },
   fileFilter: (req, file, cb) => {
+    console.log('Adult intake file filter - processing file:', file.originalname, 'mimetype:', file.mimetype);
+    
     // Accept only image files
     if (file.mimetype.startsWith('image/')) {
       cb(null, true);
     } else {
+      console.error('Adult intake file rejected - not an image:', file.mimetype);
       cb(new Error('Only image files are allowed'), false);
     }
   }
@@ -37,6 +92,145 @@ const multerConfig = {
 
 const upload = multer(multerConfig);
 const uploadAny = multer(multerConfig).any();
+
+// Enhanced error handling middleware for multer
+const handleMulterError = (err, req, res, next) => {
+  console.error('Adult intake multer error handler triggered:', err);
+  
+  if (err instanceof multer.MulterError) {
+    console.error('Adult intake multer error details:', {
+      code: err.code,
+      message: err.message,
+      field: err.field
+    });
+    
+    let errorMessage = 'File upload error: ' + err.message;
+    
+    switch (err.code) {
+      case 'LIMIT_FILE_SIZE':
+                 errorMessage = 'File is too large. Maximum size is 25MB. Please compress your image or use a smaller file.';
+        break;
+      case 'LIMIT_FILE_COUNT':
+        errorMessage = 'Too many files. Maximum is 10 files per upload.';
+        break;
+      case 'LIMIT_UNEXPECTED_FILE':
+        errorMessage = 'Unexpected file field. Please check your form configuration.';
+        break;
+      case 'LIMIT_PART_COUNT':
+        errorMessage = 'Too many form parts. Please reduce the number of form fields.';
+        break;
+      case 'LIMIT_FIELD_KEY':
+        errorMessage = 'Field name too long. Please use shorter field names.';
+        break;
+      case 'LIMIT_FIELD_VALUE':
+        errorMessage = 'Field value too large. Please reduce the size of form data.';
+        break;
+      case 'LIMIT_FIELD_COUNT':
+        errorMessage = 'Too many fields. Please reduce the number of form fields.';
+        break;
+      default:
+        errorMessage = `Upload error: ${err.message}`;
+    }
+    
+    const userForTemplate = {
+      parentFirstName: req.body ? req.body['firstName0'] : '',
+      parentLastName: req.body ? req.body['lastName0'] : '',
+      parentPhone: req.body ? req.body['phone0'] : '',
+      email: req.body ? req.body['email0'] : '',
+      preferredContact: req.body ? req.body.preferredContact || '' : '',
+      facebookProfileLink: req.body ? req.body.facebookProfileLink || '' : '',
+      instagramProfileLink: req.body ? req.body.instagramProfileLink || '' : '',
+      hasModeledBefore: req.body ? req.body.hasModeled === 'true' : false,
+      brands: req.body ? req.body.brands || '' : ''
+    };
+    
+    return res.render('adultIntake', {
+      adults: [{ firstName: '', lastName: '', email: '', phone: '', gender: '', size: '', photo: '' }],
+      user: userForTemplate,
+      errors: [{ msg: errorMessage }],
+      dashboardEdit: false
+    });
+  } 
+  
+  // Handle busboy "Unexpected end of form" errors
+  if (err.message && err.message.includes('Unexpected end of form')) {
+    console.error('Adult intake busboy "Unexpected end of form" error:', err);
+    
+    const userForTemplate = {
+      parentFirstName: req.body ? req.body['firstName0'] : '',
+      parentLastName: req.body ? req.body['lastName0'] : '',
+      parentPhone: req.body ? req.body['phone0'] : '',
+      email: req.body ? req.body['email0'] : '',
+      preferredContact: req.body ? req.body.preferredContact || '' : '',
+      facebookProfileLink: req.body ? req.body.facebookProfileLink || '' : '',
+      instagramProfileLink: req.body ? req.body.instagramProfileLink || '' : '',
+      hasModeledBefore: req.body ? req.body.hasModeled === 'true' : false,
+      brands: req.body ? req.body.brands || '' : ''
+    };
+    
+    return res.render('adultIntake', {
+      adults: [{ firstName: '', lastName: '', email: '', phone: '', gender: '', size: '', photo: '' }],
+      user: userForTemplate,
+      errors: [{ msg: 'The form submission was interrupted. This can happen due to network issues or if you tried to upload files that are too large. Please try again with smaller files or check your internet connection.' }],
+      dashboardEdit: false
+    });
+  }
+  
+  // Handle other upload-related errors
+  if (err.message && (
+    err.message.includes('ENOENT') || 
+    err.message.includes('EACCES') ||
+    err.message.includes('EMFILE') ||
+    err.message.includes('ENOSPC')
+  )) {
+    console.error('Adult intake file system error:', err);
+    
+    const userForTemplate = {
+      parentFirstName: req.body ? req.body['firstName0'] : '',
+      parentLastName: req.body ? req.body['lastName0'] : '',
+      parentPhone: req.body ? req.body['phone0'] : '',
+      email: req.body ? req.body['email0'] : '',
+      preferredContact: req.body ? req.body.preferredContact || '' : '',
+      facebookProfileLink: req.body ? req.body.facebookProfileLink || '' : '',
+      instagramProfileLink: req.body ? req.body.instagramProfileLink || '' : '',
+      hasModeledBefore: req.body ? req.body.hasModeled === 'true' : false,
+      brands: req.body ? req.body.brands || '' : ''
+    };
+    
+    return res.render('adultIntake', {
+      adults: [{ firstName: '', lastName: '', email: '', phone: '', gender: '', size: '', photo: '' }],
+      user: userForTemplate,
+      errors: [{ msg: 'Server error processing file upload. Please try again later.' }],
+      dashboardEdit: false
+    });
+  }
+  
+  // Generic error handler
+  if (err) {
+    console.error('Adult intake generic upload error:', err);
+    
+    const userForTemplate = {
+      parentFirstName: req.body ? req.body['firstName0'] : '',
+      parentLastName: req.body ? req.body['lastName0'] : '',
+      parentPhone: req.body ? req.body['phone0'] : '',
+      email: req.body ? req.body['email0'] : '',
+      preferredContact: req.body ? req.body.preferredContact || '' : '',
+      facebookProfileLink: req.body ? req.body.facebookProfileLink || '' : '',
+      instagramProfileLink: req.body ? req.body.instagramProfileLink || '' : '',
+      hasModeledBefore: req.body ? req.body.hasModeled === 'true' : false,
+      brands: req.body ? req.body.brands || '' : ''
+    };
+    
+    return res.render('adultIntake', {
+      adults: [{ firstName: '', lastName: '', email: '', phone: '', gender: '', size: '', photo: '' }],
+      user: userForTemplate,
+      errors: [{ msg: 'An error occurred during file upload. Please try again.' }],
+      dashboardEdit: false
+    });
+  }
+  
+  next();
+};
 
 // GET /intake/adult
 router.get('/', (req, res) => {
@@ -69,7 +263,7 @@ router.get('/', (req, res) => {
 });
 
 // POST /intake/adult
-router.post('/', uploadAny, async (req, res) => {
+router.post('/', uploadAny, handleMulterError, async (req, res) => {
   try {
     console.log('ADULT INTAKE SUBMISSION:', { body: req.body, files: req.files });
     // Parse adults
@@ -230,32 +424,10 @@ router.post('/', uploadAny, async (req, res) => {
         dashboardEdit: false
       });
     }
-    // Send email if new user
-    if (isNewUser) {
-      // Configure nodemailer (use SMTP settings from env, not Gmail)
-      const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
-        secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for 587
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      });
-      const loginUrl = process.env.BASE_URL || 'http://localhost:3000';
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: userEmail,
-        subject: 'Welcome to Annie Jean Photography',
-        text: `Thank you for registering!\n\nYou can log in to update your information at: ${loginUrl}/login\n\nEmail: ${userEmail}\nPassword: ${tempPassword}\n\nPlease keep this information safe.`
-      };
-      try {
-        await transporter.sendMail(mailOptions);
-        console.log('Sent welcome email to', userEmail);
-      } catch (emailErr) {
-        console.error('Error sending welcome email:', emailErr);
+          // Send email if new user (asynchronously - don't wait for it)
+      if (isNewUser) {
+        sendWelcomeEmailAsync(userEmail, tempPassword);
       }
-    }
     res.redirect('/intake/adult/thankyou');
   } catch (err) {
     console.error('ADULT INTAKE FATAL ERROR:', err);
@@ -293,7 +465,7 @@ router.get('/dashboard/edit-adult', async (req, res) => {
 });
 
 // POST /dashboard/edit-adult
-router.post('/dashboard/edit-adult', uploadAny, async (req, res) => {
+router.post('/dashboard/edit-adult', uploadAny, handleMulterError, async (req, res) => {
   try {
     const userId = req.session.userId;
     if (!userId) return res.redirect('/login');
@@ -373,31 +545,9 @@ router.post('/dashboard/edit-adult', uploadAny, async (req, res) => {
         dashboardEdit: false
       });
     }
-    // Send email if new user
+    // Send email if new user (asynchronously - don't wait for it)
     if (isNewUser) {
-      // Configure nodemailer (use SMTP settings from env, not Gmail)
-      const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
-        secure: process.env.EMAIL_SECURE === 'true', // true for 465, false for 587
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASSWORD
-        }
-      });
-      const loginUrl = process.env.BASE_URL || 'http://localhost:3000';
-      const mailOptions = {
-        from: process.env.EMAIL_USER,
-        to: userEmail,
-        subject: 'Welcome to Annie Jean Photography',
-        text: `Thank you for registering!\n\nYou can log in to update your information at: ${loginUrl}/login\n\nEmail: ${userEmail}\nPassword: ${tempPassword}\n\nPlease keep this information safe.`
-      };
-      try {
-        await transporter.sendMail(mailOptions);
-        console.log('Sent welcome email to', userEmail);
-      } catch (emailErr) {
-        console.error('Error sending welcome email:', emailErr);
-      }
+      sendWelcomeEmailAsync(userEmail, tempPassword);
     }
     res.redirect('/intake/adult/thankyou');
   } catch (err) {

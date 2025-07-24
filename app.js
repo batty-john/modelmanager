@@ -31,9 +31,35 @@ app.use((req, res, next) => {
     req.connection.remoteAddress = req.headers['x-forwarded-for'].split(',')[0];
   }
   
-  // Set timeout for cPanel/LiteSpeed
-  req.setTimeout(30000); // 30 seconds
-  res.setTimeout(30000); // 30 seconds
+  // Set timeout for cPanel/LiteSpeed - increased for file uploads
+  req.setTimeout(120000); // 2 minutes for file uploads
+  res.setTimeout(120000); // 2 minutes for responses
+  
+  next();
+});
+
+// Enhanced request timeout and size handling
+app.use((req, res, next) => {
+  // Set longer timeouts for file uploads
+  if (req.path.includes('/intake/') || req.path.includes('/dashboard/edit-')) {
+    req.setTimeout(180000); // 3 minutes for intake forms
+    res.setTimeout(180000);
+  }
+  
+  // Add request ID for debugging
+  req.requestId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+  console.log(`[${req.requestId}] ${req.method} ${req.path} - Started`);
+  
+  // Track request timing
+  req.startTime = Date.now();
+  
+  // Enhanced error handling
+  const originalSend = res.send;
+  res.send = function(data) {
+    const duration = Date.now() - req.startTime;
+    console.log(`[${req.requestId}] ${req.method} ${req.path} - Completed in ${duration}ms`);
+    originalSend.call(this, data);
+  };
   
   next();
 });
@@ -51,8 +77,69 @@ app.use((req, res, next) => {
   
   // Handle large form data for cPanel
   if (req.headers['content-length'] && parseInt(req.headers['content-length']) > 1000000) {
-    req.setTimeout(60000); // 60 seconds for large forms
+    req.setTimeout(180000); // 3 minutes for large forms
   }
+  
+  next();
+});
+
+// Enhanced error handling middleware
+app.use((err, req, res, next) => {
+  console.error(`[${req.requestId || 'unknown'}] Error:`, err);
+  
+  // Handle specific error types
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).render('error', {
+      message: 'File is too large. Maximum size is 10MB. Please compress your image or use a smaller file.',
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+  }
+  
+  if (err.code === 'LIMIT_FILE_COUNT') {
+    return res.status(400).render('error', {
+      message: 'Too many files. Maximum is 10 files per upload.',
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+  }
+  
+  if (err.code === 'ETIMEOUT' || err.message === 'Request timeout') {
+    return res.status(408).render('error', {
+      message: 'Request timed out. Please try again with smaller files or check your internet connection.',
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+  }
+  
+  // Database connection errors
+  if (err.name === 'SequelizeConnectionError') {
+    return res.status(503).render('error', {
+      message: 'Database connection error. Please try again in a moment.',
+      error: process.env.NODE_ENV === 'development' ? err : {}
+    });
+  }
+  
+  // Default error handler
+  res.status(err.status || 500).render('error', {
+    message: err.message || 'An unexpected error occurred. Please try again.',
+    error: process.env.NODE_ENV === 'development' ? err : {}
+  });
+});
+
+// Request timeout middleware
+app.use((req, res, next) => {
+  const timeout = setTimeout(() => {
+    if (!res.headersSent) {
+      console.log(`[${req.requestId}] Request timeout for ${req.method} ${req.path}`);
+      res.status(408).render('error', {
+        message: 'Request timed out. Please try again.',
+        error: {}
+      });
+    }
+  }, 180000); // 3 minute timeout
+  
+  // Clear timeout when response is sent
+  res.on('finish', () => {
+    clearTimeout(timeout);
+  });
   
   next();
 });
@@ -123,15 +210,41 @@ app.use((req, res, next) => {
   console.log('Session ID:', req.sessionID);
   console.log('Cookies:', req.headers.cookie);
   if (req.method === 'POST') {
-    console.log('Request body:', req.body);
+    console.log('Request body keys:', Object.keys(req.body || {}));
+    // Don't log full body as it may contain large data
   }
   next();
 });
 
-// Database sync
-sequelize.sync({ alter: true })
-  .then(() => console.log('Database synced'))
-  .catch((err) => console.error('Database sync error:', err));
+// Database sync with retry logic
+async function connectToDatabase(retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await sequelize.sync({ alter: true });
+      console.log('✅ Database synced successfully');
+      return;
+    } catch (err) {
+      console.error(`❌ Database sync error (attempt ${i + 1}/${retries}):`, err);
+      if (i === retries - 1) {
+        console.error('Failed to connect to database after all retries');
+        process.exit(1);
+      }
+      // Wait before retrying
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+  }
+}
+
+connectToDatabase();
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
+});
 
 // Splash page route
 app.get('/', (req, res) => {
@@ -201,6 +314,14 @@ app.use('/intake/child', childIntakeRouter);
 app.use('/intake/adult', adultIntakeRouter);
 app.use(authRouter);
 app.use(dashboardRouter);
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).render('error', {
+    message: 'Page not found',
+    error: {}
+  });
+});
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

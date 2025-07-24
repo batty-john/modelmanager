@@ -1,33 +1,86 @@
+/* Enhanced Loading Styles for Forms */
+
 /* Loading Spinner */
 .loading-spinner {
   display: inline-block;
   width: 20px;
   height: 20px;
-  border: 3px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid #f3f3f3;
   border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
+  border-top: 2px solid #d2e8e3;
+  animation: spin 1s linear infinite;
+}
+
+/* Larger spinner for overlays */
+.loading-spinner.large {
+  width: 40px;
+  height: 40px;
+  border-width: 4px;
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* Progress Bar */
+/* Form Submission States */
+.submitting {
+  position: relative;
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.submitting::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.3);
+  z-index: 1;
+  border-radius: 8px;
+}
+
+/* Button Loading States */
+button[type="submit"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+button[type="submit"]:disabled .loading-spinner {
+  margin-right: 8px;
+}
+
+/* Progress Indicators */
+.upload-progress {
+  background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 16px;
+  animation: fadeIn 0.3s ease-in;
+}
+
 .progress-container {
   width: 100%;
+  height: 8px;
   background-color: #e5e7eb;
   border-radius: 4px;
   overflow: hidden;
-  margin: 10px 0;
 }
 
 .progress-bar {
-  height: 4px;
-  background: linear-gradient(90deg, #fbbf24, #f59e0b);
-  width: 0%;
-  transition: width 0.3s ease;
+  height: 100%;
+  background: linear-gradient(90deg, #d2e8e3 0%, #a7d4c1 100%);
   border-radius: 4px;
+  transition: width 0.3s ease;
+  animation: progressPulse 2s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }
 
 /* Loading Overlay */
@@ -39,8 +92,8 @@
   height: 100%;
   background: rgba(0, 0, 0, 0.5);
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
   z-index: 9999;
   opacity: 0;
   visibility: hidden;
@@ -54,91 +107,153 @@
 
 .loading-content {
   background: white;
-  padding: 30px;
-  border-radius: 8px;
+  padding: 2rem;
+  border-radius: 12px;
   text-align: center;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  max-width: 300px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 .loading-text {
-  margin-top: 15px;
+  margin-top: 1rem;
   color: #374151;
   font-weight: 500;
 }
 
-/* Form Loading States */
-.form-loading {
-  pointer-events: none;
-  opacity: 0.7;
+/* Field Validation States */
+.field-error {
+  color: #dc2626;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  display: block;
+  animation: fadeIn 0.2s ease-in;
 }
 
-.form-loading .btn-gold-gradient {
-  position: relative;
-  color: transparent;
+input.border-red-500,
+select.border-red-500,
+textarea.border-red-500 {
+  border-color: #dc2626 !important;
+  box-shadow: 0 0 0 1px #dc2626 !important;
 }
 
-.form-loading .btn-gold-gradient::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 20px;
-  height: 20px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-radius: 50%;
-  border-top-color: #fff;
-  animation: spin 1s ease-in-out infinite;
-}
-
-/* Upload Progress */
-.upload-progress {
-  margin: 10px 0;
-  padding: 10px;
-  background: #f3f4f6;
-  border-radius: 4px;
-  border: 1px solid #d1d5db;
-}
-
-.upload-progress .progress-bar {
-  height: 6px;
-  background: linear-gradient(90deg, #10b981, #059669);
-}
-
-/* Disable form during submission */
-.form-submitting {
-  pointer-events: none;
-}
-
-.form-submitting input,
-.form-submitting select,
-.form-submitting textarea,
-.form-submitting button {
-  opacity: 0.6;
-}
-
-/* Success/Error Messages */
-.message {
-  padding: 12px 16px;
+/* Message Styles */
+.form-message {
   border-radius: 6px;
-  margin: 10px 0;
-  font-weight: 500;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  animation: slideDown 0.3s ease-out;
 }
 
-.message.success {
-  background: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.message.error {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+/* Auto-save Indicator */
+.auto-save-indicator {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #10b981;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
 }
 
-.message.info {
-  background: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+/* Connection Status */
+.connection-warning {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* File Info Display */
+.file-info {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
+  padding: 4px 8px;
+  background: #f9fafb;
+  border-radius: 4px;
+  border: 1px solid #e5e7eb;
+}
+
+/* Enhanced Input Focus States */
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #d2e8e3 !important;
+  box-shadow: 0 0 0 3px rgba(210, 232, 227, 0.1) !important;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+/* Form Enhancement Animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive Loading States */
+@media (max-width: 640px) {
+  .loading-content {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .auto-save-indicator {
+    bottom: 10px;
+    right: 10px;
+    font-size: 0.7rem;
+    padding: 6px 10px;
+  }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+  .loading-spinner,
+  .progress-bar,
+  .form-message,
+  .connection-warning {
+    animation: none;
+  }
+  
+  .loading-overlay {
+    transition: none;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .loading-content {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .loading-text {
+    color: #d1d5db;
+  }
+  
+  .file-info {
+    background: #374151;
+    color: #d1d5db;
+    border-color: #4b5563;
+  }
 } 
