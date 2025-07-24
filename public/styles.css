@@ -60,7 +60,7 @@ body {
 }
 .remove-child-btn {
   background: #d2e8e3;
-  color: #fff;
+  color: #222;
   border: none;
   padding: 6px 18px;
   border-radius: 4px;
@@ -77,7 +77,7 @@ body {
 }
 .add-child-btn {
   background: #d2e8e3;
-  color: #fff;
+  color: #222;
   border: none;
   padding: 10px 24px;
   border-radius: 4px;
@@ -121,7 +121,7 @@ input[type="file"] {
 }
 button[type="submit"] {
   background: #d2e8e3;
-  color: #fff;
+  color: #222;
   border: none;
   padding: 12px 0;
   border-radius: 4px;
@@ -156,7 +156,7 @@ button[type="submit"]:hover {
 /* Brand Color Button (Primary) */
 .btn-brand-gradient {
   background: #d2e8e3;
-  color: #fff;
+  color: #222;
   border: 2px solid #d2e8e3;
   border-radius: 9999px;
   box-shadow: 0 2px 8px rgba(210,232,227,0.15);
@@ -172,7 +172,7 @@ button[type="submit"]:hover {
 /* Brand Outline Button (Secondary) */
 .btn-brand-outline {
   background: #fff;
-  color: #d2e8e3;
+  color: #222;
   border: 2px solid #d2e8e3;
   border-radius: 9999px;
   padding: 0.75rem 2rem;
@@ -202,7 +202,7 @@ button[type="submit"]:hover {
 /* Solid Brand Button */
 .btn-brand-solid {
   background: #d2e8e3;
-  color: #fff;
+  color: #222;
   border: 2px solid #fff;
   border-radius: 9999px;
   box-shadow: 0 2px 8px rgba(210,232,227,0.15);
@@ -218,7 +218,7 @@ button[type="submit"]:hover {
 /* Metallic Brand Button */
 .btn-metallic-brand {
   background: linear-gradient(90deg, #b8d4c7 0%, #d2e8e3 50%, #e6f2ef 100%);
-  color: #fff;
+  color: #222;
   border: 2px solid #fff;
   border-radius: 9999px;
   box-shadow: 0 2px 8px rgba(184,212,199,0.15);
@@ -234,7 +234,7 @@ button[type="submit"]:hover {
 /* Legacy button classes for backward compatibility */
 .btn-gold-gradient {
   background: #d2e8e3;
-  color: #fff;
+  color: #222;
   border: 2px solid #d2e8e3;
   border-radius: 9999px;
   box-shadow: 0 2px 8px rgba(210,232,227,0.15);
@@ -249,7 +249,7 @@ button[type="submit"]:hover {
 
 .btn-gold-outline {
   background: #fff;
-  color: #d2e8e3;
+  color: #222;
   border: 2px solid #d2e8e3;
   border-radius: 9999px;
   padding: 0.75rem 2rem;
@@ -263,7 +263,7 @@ button[type="submit"]:hover {
 
 .btn-gold-solid {
   background: #d2e8e3;
-  color: #fff;
+  color: #222;
   border: 2px solid #fff;
   border-radius: 9999px;
   box-shadow: 0 2px 8px rgba(210,232,227,0.15);
@@ -278,7 +278,7 @@ button[type="submit"]:hover {
 
 .btn-metallic-gold {
   background: linear-gradient(90deg, #b8d4c7 0%, #d2e8e3 50%, #e6f2ef 100%);
-  color: #fff;
+  color: #222;
   border: 2px solid #fff;
   border-radius: 9999px;
   box-shadow: 0 2px 8px rgba(184,212,199,0.15);
