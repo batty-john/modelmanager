@@ -33,20 +33,20 @@ body {
   width: 110px;
   height: 110px;
   border-radius: 50%;
-  background: #f0fdfa;
-  border: 2px solid #99FAED;
+  background: #f0f9f5;
+  border: 2px solid #d2e8e3;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 3rem;
-  color: #99FAED;
+  color: #d2e8e3;
   cursor: pointer;
   margin-top: 8px;
   margin-bottom: 8px;
   transition: border 0.2s;
 }
 .child-photo-preview:hover {
-  border: 2.5px solid #7BE8D8;
+  border: 2.5px solid #b8d4c7;
 }
 .child-fields-row {
   display: flex;
@@ -59,7 +59,7 @@ body {
   flex-direction: column;
 }
 .remove-child-btn {
-  background: #99FAED;
+  background: #d2e8e3;
   color: #fff;
   border: none;
   padding: 6px 18px;
@@ -73,10 +73,10 @@ body {
   transition: background 0.2s;
 }
 .remove-child-btn:hover {
-  background: #7BE8D8;
+  background: #b8d4c7;
 }
 .add-child-btn {
-  background: #99FAED;
+  background: #d2e8e3;
   color: #fff;
   border: none;
   padding: 10px 24px;
@@ -88,7 +88,7 @@ body {
   transition: background 0.2s;
 }
 .add-child-btn:hover {
-  background: #7BE8D8;
+  background: #b8d4c7;
 }
 label {
   font-weight: 500;
@@ -113,14 +113,14 @@ input[type="email"]:focus,
 input[type="date"]:focus,
 input[type="number"]:focus,
 select:focus {
-  border: 1.5px solid #99FAED;
+  border: 1.5px solid #d2e8e3;
   outline: none;
 }
 input[type="file"] {
   margin-top: 4px;
 }
 button[type="submit"] {
-  background: #99FAED;
+  background: #d2e8e3;
   color: #fff;
   border: none;
   padding: 12px 0;
@@ -132,7 +132,7 @@ button[type="submit"] {
   transition: background 0.2s;
 }
 button[type="submit"]:hover {
-  background: #7BE8D8;
+  background: #b8d4c7;
 }
 .success-message {
   background: #e6f9e6;
@@ -155,32 +155,32 @@ button[type="submit"]:hover {
 
 /* Brand Color Button (Primary) */
 .btn-brand-gradient {
-  background: #99FAED;
+  background: #d2e8e3;
   color: #fff;
-  border: 2px solid #99FAED;
+  border: 2px solid #d2e8e3;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(153,250,237,0.15);
+  box-shadow: 0 2px 8px rgba(210,232,227,0.15);
   padding: 0.75rem 2rem;
   font-weight: 600;
   transition: filter 0.2s, box-shadow 0.2s;
 }
 .btn-brand-gradient:hover {
   filter: brightness(1.08);
-  box-shadow: 0 4px 16px rgba(153,250,237,0.25);
+  box-shadow: 0 4px 16px rgba(210,232,227,0.25);
 }
 
 /* Brand Outline Button (Secondary) */
 .btn-brand-outline {
   background: #fff;
-  color: #99FAED;
-  border: 2px solid #99FAED;
+  color: #d2e8e3;
+  border: 2px solid #d2e8e3;
   border-radius: 9999px;
   padding: 0.75rem 2rem;
   font-weight: 600;
   transition: background 0.2s, color 0.2s;
 }
 .btn-brand-outline:hover {
-  background: #f0fdfa;
+  background: #f0f9f5;
   color: #222;
 }
 
@@ -201,92 +201,92 @@ button[type="submit"]:hover {
 
 /* Solid Brand Button */
 .btn-brand-solid {
-  background: #99FAED;
+  background: #d2e8e3;
   color: #fff;
   border: 2px solid #fff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(153,250,237,0.15);
+  box-shadow: 0 2px 8px rgba(210,232,227,0.15);
   padding: 0.75rem 2rem;
   font-weight: 600;
   transition: filter 0.2s, box-shadow 0.2s;
 }
 .btn-brand-solid:hover {
   filter: brightness(1.12);
-  box-shadow: 0 4px 16px rgba(153,250,237,0.25);
+  box-shadow: 0 4px 16px rgba(210,232,227,0.25);
 }
 
 /* Metallic Brand Button */
 .btn-metallic-brand {
-  background: linear-gradient(90deg, #7BE8D8 0%, #99FAED 50%, #B8F5F0 100%);
+  background: linear-gradient(90deg, #b8d4c7 0%, #d2e8e3 50%, #e6f2ef 100%);
   color: #fff;
   border: 2px solid #fff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(123,232,216,0.15);
+  box-shadow: 0 2px 8px rgba(184,212,199,0.15);
   padding: 0.75rem 2rem;
   font-weight: 600;
   transition: filter 0.2s, box-shadow 0.2s;
 }
 .btn-metallic-brand:hover {
   filter: brightness(1.10);
-  box-shadow: 0 4px 16px rgba(123,232,216,0.25);
+  box-shadow: 0 4px 16px rgba(184,212,199,0.25);
 }
 
 /* Legacy button classes for backward compatibility */
 .btn-gold-gradient {
-  background: #99FAED;
+  background: #d2e8e3;
   color: #fff;
-  border: 2px solid #99FAED;
+  border: 2px solid #d2e8e3;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(153,250,237,0.15);
+  box-shadow: 0 2px 8px rgba(210,232,227,0.15);
   padding: 0.75rem 2rem;
   font-weight: 600;
   transition: filter 0.2s, box-shadow 0.2s;
 }
 .btn-gold-gradient:hover {
   filter: brightness(1.08);
-  box-shadow: 0 4px 16px rgba(153,250,237,0.25);
+  box-shadow: 0 4px 16px rgba(210,232,227,0.25);
 }
 
 .btn-gold-outline {
   background: #fff;
-  color: #99FAED;
-  border: 2px solid #99FAED;
+  color: #d2e8e3;
+  border: 2px solid #d2e8e3;
   border-radius: 9999px;
   padding: 0.75rem 2rem;
   font-weight: 600;
   transition: background 0.2s, color 0.2s;
 }
 .btn-gold-outline:hover {
-  background: #f0fdfa;
+  background: #f0f9f5;
   color: #222;
 }
 
 .btn-gold-solid {
-  background: #99FAED;
+  background: #d2e8e3;
   color: #fff;
   border: 2px solid #fff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(153,250,237,0.15);
+  box-shadow: 0 2px 8px rgba(210,232,227,0.15);
   padding: 0.75rem 2rem;
   font-weight: 600;
   transition: filter 0.2s, box-shadow 0.2s;
 }
 .btn-gold-solid:hover {
   filter: brightness(1.12);
-  box-shadow: 0 4px 16px rgba(153,250,237,0.25);
+  box-shadow: 0 4px 16px rgba(210,232,227,0.25);
 }
 
 .btn-metallic-gold {
-  background: linear-gradient(90deg, #7BE8D8 0%, #99FAED 50%, #B8F5F0 100%);
+  background: linear-gradient(90deg, #b8d4c7 0%, #d2e8e3 50%, #e6f2ef 100%);
   color: #fff;
   border: 2px solid #fff;
   border-radius: 9999px;
-  box-shadow: 0 2px 8px rgba(123,232,216,0.15);
+  box-shadow: 0 2px 8px rgba(184,212,199,0.15);
   padding: 0.75rem 2rem;
   font-weight: 600;
   transition: filter 0.2s, box-shadow 0.2s;
 }
 .btn-metallic-gold:hover {
   filter: brightness(1.10);
-  box-shadow: 0 4px 16px rgba(123,232,216,0.25);
+  box-shadow: 0 4px 16px rgba(184,212,199,0.25);
 } 
