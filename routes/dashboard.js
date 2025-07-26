@@ -56,29 +56,46 @@ function calculateChildSize(weight, height) {
     return null;
   }
   
-  // Size chart based on weight and height
-  if (weightNum >= 31 && weightNum <= 39 && heightNum >= 36 && heightNum <= 42) {
-    return '3T-4T';
-  } else if (weightNum >= 39 && weightNum <= 48 && heightNum >= 42 && heightNum <= 48) {
-    return '5T-6T';
-  } else if (weightNum >= 49 && weightNum <= 71 && heightNum >= 48 && heightNum <= 52) {
-    return '7Y-8Y';
-  } else if (weightNum >= 72 && weightNum <= 101 && heightNum >= 54 && heightNum <= 62) {
+  // Complete size chart based on weight ranges (defaulting to larger size for overlaps)
+  // Check from largest to smallest to default to larger sizes in overlaps
+  
+  // Very large children
+  if (weightNum >= 72) {
     return '10Y-12Y';
+  } else if (weightNum >= 49) {
+    return '7Y-8Y';
+  } else if (weightNum >= 39) {
+    return '5T-6T'; // Fixed capitalization
+  } else if (weightNum >= 31) {
+    return '3T-4T';
+  } else if (weightNum >= 28) {
+    return '2T';
+  } else if (weightNum >= 25) {
+    return '18-24 Months';
+  } else if (weightNum >= 22) {
+    return '12-18 Months';
+  }
+  // Handle overlapping ranges for smaller sizes (default to larger/older size)
+  else if (weightNum >= 20) {
+    return '9-12 Months'; // Larger of the overlapping options
+  } else if (weightNum >= 17) {
+    return '6-12 Months'; // Larger of the overlapping options  
+  } else if (weightNum >= 12) {
+    return '3-6 Months';
+  } else if (weightNum >= 9) {
+    return '0-3 Months';
+  } else if (weightNum >= 6) {
+    return 'Newborn';
+  } else if (weightNum >= 0) {
+    return 'Preemie';
   }
   
-  // If no exact match, try to determine based on weight ranges only
-  if (weightNum >= 31 && weightNum <= 39) {
-    return '3T-4T';
-  } else if (weightNum >= 40 && weightNum <= 48) {
-    return '5T-6T';
-  } else if (weightNum >= 49 && weightNum <= 71) {
-    return '7Y-8Y';
-  } else if (weightNum >= 72 && weightNum <= 101) {
-    return '10Y-12Y';
+  // Handle edge cases
+  if (weightNum > 101) {
+    return '10Y-12Y';  // Very large children default to largest size
   }
   
-  return null; // No size determined
+  return null; // Should rarely reach here now
 }
 
 // Multer setup for file uploads

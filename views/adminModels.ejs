@@ -52,7 +52,7 @@
       </div>
       <div>
         <label class="block text-xs font-semibold text-gray-700">Gender</label>
-        <select name="gender" id="filterGender" class="input-gold w-32 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+        <select name="gender" id="filterGender" class="input-gold w-32 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-green-400">
           <option value="">All</option>
           <option value="Male">Male</option>
           <option value="Female">Female</option>
@@ -69,22 +69,34 @@
         <input type="text" name="minWeight" id="filterMinWeight" placeholder="Min" class="input-gold w-16"> -
         <input type="text" name="maxWeight" id="filterMaxWeight" placeholder="Max" class="input-gold w-16">
       </div>
-      <div>
-        <label class="block text-xs font-semibold text-gray-700">Size</label>
-        <select name="size" id="filterSize" class="input-gold w-20 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-cyan-400">
-          <option value="">All</option>
-          <option value="XS">XS</option>
-          <option value="S">S</option>
-          <option value="M">M</option>
-          <option value="L">L</option>
-          <option value="XL">XL</option>
-          <option value="XXL">XXL</option>
-          <option value="3T-4T">3T-4T</option>
-          <option value="5T-6T">5T-6T</option>
-          <option value="7Y-8Y">7Y-8Y</option>
-          <option value="10Y-12Y">10Y-12Y</option>
-        </select>
-      </div>
+             <div>
+         <label class="block text-xs font-semibold text-gray-700">Size</label>
+         <select name="size" id="filterSize" class="input-gold w-32 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-green-400">
+           <option value="">All</option>
+           <!-- Adult sizes -->
+           <option value="XS">XS</option>
+           <option value="S">S</option>
+           <option value="M">M</option>
+           <option value="L">L</option>
+           <option value="XL">XL</option>
+           <option value="XXL">XXL</option>
+           <!-- Child sizes -->
+           <option value="Preemie">Preemie</option>
+           <option value="Newborn">Newborn</option>
+           <option value="0-3 Months">0-3 Months</option>
+           <option value="3-6 Months">3-6 Months</option>
+           <option value="6-9 Months">6-9 Months</option>
+           <option value="6-12 Months">6-12 Months</option>
+           <option value="9-12 Months">9-12 Months</option>
+           <option value="12-18 Months">12-18 Months</option>
+           <option value="18-24 Months">18-24 Months</option>
+           <option value="2T">2T</option>
+           <option value="3T-4T">3T-4T</option>
+           <option value="5T-6T">5T-6T</option>
+           <option value="7Y-8Y">7Y-8Y</option>
+           <option value="10Y-12Y">10Y-12Y</option>
+         </select>
+       </div>
       <div>
         <label class="block text-xs font-semibold text-gray-700">Brands</label>
         <input type="text" name="brands" id="filterBrands" class="input-gold w-32">
@@ -95,7 +107,7 @@
       </div>
       <div>
         <label class="block text-xs font-semibold text-gray-700">Model Type</label>
-        <select name="modelType" id="filterModelType" class="input-gold w-28 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+        <select name="modelType" id="filterModelType" class="input-gold w-28 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-green-400">
           <option value="">All</option>
           <option value="adult">Adult</option>
           <option value="child">Child</option>
@@ -113,7 +125,7 @@
       </div>
       <div>
         <label class="block text-xs font-semibold text-gray-700">Sort By</label>
-        <select name="sort" id="filterSort" class="input-gold w-40 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+        <select name="sort" id="filterSort" class="input-gold w-40 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-green-400">
           <option value="">Default</option>
           <option value="alpha">Alphabetical</option>
           <option value="updated">Recently Updated</option>
@@ -122,7 +134,7 @@
       </div>
       <div id="approvalFilterSection" style="display: <%= selectedShootId ? 'block' : 'none' %>;">
         <label class="block text-xs font-semibold text-gray-700">Approval Status</label>
-        <select name="approvalStatus" id="filterApprovalStatus" class="input-gold w-32 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+        <select name="approvalStatus" id="filterApprovalStatus" class="input-gold w-32 rounded-md border border-gray-300 py-2 px-2 focus:outline-none focus:ring-2 focus:ring-green-400">
           <option value="">All</option>
           <option value="1">Approved</option>
           <option value="0">Disapproved</option>
@@ -370,8 +382,18 @@
               <td class="px-4 py-2"><input type="text" value="<%= child.childWeight %>" class="input-gold w-16 weight-input" /></td>
               <td class="px-4 py-2"><input type="text" value="<%= child.childHeight %>" class="input-gold w-16 height-input" /></td>
               <td class="px-4 py-2">
-                <select class="input-gold w-16 size-input">
+                <select class="input-gold w-24 size-input">
                   <option value="">Select</option>
+                  <option value="Preemie" <%= child.childSize === 'Preemie' ? 'selected' : '' %>>Preemie</option>
+                  <option value="Newborn" <%= child.childSize === 'Newborn' ? 'selected' : '' %>>Newborn</option>
+                  <option value="0-3 Months" <%= child.childSize === '0-3 Months' ? 'selected' : '' %>>0-3 Months</option>
+                  <option value="3-6 Months" <%= child.childSize === '3-6 Months' ? 'selected' : '' %>>3-6 Months</option>
+                  <option value="6-9 Months" <%= child.childSize === '6-9 Months' ? 'selected' : '' %>>6-9 Months</option>
+                  <option value="6-12 Months" <%= child.childSize === '6-12 Months' ? 'selected' : '' %>>6-12 Months</option>
+                  <option value="9-12 Months" <%= child.childSize === '9-12 Months' ? 'selected' : '' %>>9-12 Months</option>
+                  <option value="12-18 Months" <%= child.childSize === '12-18 Months' ? 'selected' : '' %>>12-18 Months</option>
+                  <option value="18-24 Months" <%= child.childSize === '18-24 Months' ? 'selected' : '' %>>18-24 Months</option>
+                  <option value="2T" <%= child.childSize === '2T' ? 'selected' : '' %>>2T</option>
                   <option value="3T-4T" <%= child.childSize === '3T-4T' ? 'selected' : '' %>>3T-4T</option>
                   <option value="5T-6T" <%= child.childSize === '5T-6T' ? 'selected' : '' %>>5T-6T</option>
                   <option value="7Y-8Y" <%= child.childSize === '7Y-8Y' ? 'selected' : '' %>>7Y-8Y</option>
