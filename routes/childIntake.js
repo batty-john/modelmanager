@@ -513,7 +513,7 @@ router.post('/',
       dashboardEdit: false 
     });
   }
-);
+});
 
 // Thank you page route
 router.get('/thank-you', (req, res) => {
