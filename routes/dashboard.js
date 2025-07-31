@@ -114,10 +114,10 @@ const multerConfig = {
   storage,
   limits: {
     fileSize: 25 * 1024 * 1024, // 25MB for professional model photos
-    files: 10, // Maximum 10 files
+    files: 15, // Maximum 15 files (increased for large families)
     fieldSize: 2 * 1024 * 1024, // 2MB for form fields
     fieldNameSize: 100, // 100 bytes for field names
-    fields: 50 // Maximum 50 non-file fields
+    fields: 150 // Maximum 150 non-file fields (increased for families with 5+ children)
   },
   fileFilter: (req, file, cb) => {
     console.log('File filter - processing file:', file.originalname, 'mimetype:', file.mimetype);
@@ -139,14 +139,29 @@ const uploadAny = multer(multerConfig).any();
 
 // Enhanced error handling middleware for multer
 const handleMulterError = (err, req, res, next) => {
-  console.error('Multer error handler triggered:', err);
+  // Log to stderr for cPanel/LiteSpeed environments
+  console.error('=== DASHBOARD FORM SUBMISSION FAILED ===');
+  console.error('Timestamp:', new Date().toISOString());
+  console.error('Error Type: Multer/Upload Error');
+  console.error('Dashboard multer error handler triggered:', err);
   
   if (err instanceof multer.MulterError) {
-    console.error('Multer error details:', {
+    console.error('Dashboard multer error details:', {
       code: err.code,
       message: err.message,
-      field: err.field
+      field: err.field,
+      stack: err.stack
     });
+    
+    // Log form data context for debugging
+    if (req.body) {
+      const fieldCount = Object.keys(req.body).length;
+      const childCount = Object.keys(req.body).filter(key => key.startsWith('childName')).length;
+      console.error('Form context - Total fields:', fieldCount, 'Children detected:', childCount);
+    }
+    if (req.files) {
+      console.error('Files received:', req.files.length);
+    }
     
     let errorMessage = 'File upload error: ' + err.message;
     let statusCode = 400;
@@ -171,12 +186,13 @@ const handleMulterError = (err, req, res, next) => {
         errorMessage = 'Field value too large. Please reduce the size of form data.';
         break;
       case 'LIMIT_FIELD_COUNT':
-        errorMessage = 'Too many fields. Please reduce the number of form fields.';
+        errorMessage = 'Too many form fields. This can happen with large families (4+ children). Please try submitting fewer children at once, or contact support for assistance with large family registrations.';
         break;
       default:
         errorMessage = `Upload error: ${err.message}`;
     }
     
+    console.error('=== END DASHBOARD MULTER ERROR LOG ===');
     return res.status(statusCode).render('error', {
       message: errorMessage,
       error: process.env.NODE_ENV === 'development' ? err : {}
@@ -337,6 +353,23 @@ router.get('/dashboard/edit-family', requireLogin, async (req, res) => {
 
 // POST /dashboard/edit-family
 router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError, async (req, res) => {
+  try {
+  // Enhanced logging for debugging field count issues
+  console.log('=== DASHBOARD EDIT-FAMILY SUBMISSION DEBUG ===');
+  console.log('Total form fields received:', Object.keys(req.body).length);
+  console.log('Total files received:', req.files ? req.files.length : 0);
+  console.log('Form fields:', Object.keys(req.body));
+  console.log('File fields:', req.files ? req.files.map(f => f.fieldname) : []);
+  
+  // Count child-specific fields
+  const childFields = Object.keys(req.body).filter(key => 
+    key.startsWith('childName') || key.startsWith('childDob') || key.startsWith('childGender') || 
+    key.startsWith('childWeight') || key.startsWith('childHeight')
+  );
+  const childCount = Object.keys(req.body).filter(key => key.startsWith('childName')).length;
+  console.log(`Detected ${childCount} children with ${childFields.length} child-related fields`);
+  console.log('===============================================');
+  
   // Parse children from form (moved outside try block)
   const childIndices = Object.keys(req.body)
     .filter(key => key.startsWith('childName'))
@@ -412,6 +445,14 @@ router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError
     }
 
     if (errors.length > 0) {
+      console.error('=== DASHBOARD EDIT-FAMILY VALIDATION FAILED ===');
+      console.error('Timestamp:', new Date().toISOString());
+      console.error('Error Type: Form validation errors');
+      console.error('Validation errors:', errors);
+      console.error('Children attempted:', childIndices.length);
+      console.error('User ID:', req.session.userId);
+      console.error('=== END DASHBOARD VALIDATION LOG ===');
+      
       // Re-render form with errors
       const children = childIndices.map(idx => ({
         childFirstName: req.body[`childName${idx}`] || '',
@@ -493,9 +534,27 @@ router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError
         await existingByKey[key].destroy();
       }
     }
+    
+    // Log successful submission to stderr for monitoring
+    console.error('=== DASHBOARD EDIT-FAMILY SUBMITTED SUCCESSFULLY ===');
+    console.error('Timestamp:', new Date().toISOString());
+    console.error('Children processed:', childIndices.length);
+    console.error('User ID:', req.session.userId);
+    console.error('=== END SUCCESSFUL DASHBOARD SUBMISSION LOG ===');
+    
     res.redirect('/dashboard');
   } catch (err) {
+    console.error('=== DASHBOARD EDIT-FAMILY SUBMISSION FAILED ===');
+    console.error('Timestamp:', new Date().toISOString());
+    console.error('Error Type: Route processing error');
     console.error('Error in edit-family route:', err);
+    console.error('Error stack:', err.stack);
+    console.error('User ID:', req.session.userId);
+    console.error('Children being processed:', childIndices.length);
+    console.error('Request body keys:', Object.keys(req.body || {}));
+    console.error('Request files count:', req.files ? req.files.length : 0);
+    console.error('=== END DASHBOARD ERROR LOG ===');
+    
     // Handle any unexpected errors
     const children = childIndices.map(idx => ({
       childFirstName: req.body[`childName${idx}`] || '',
@@ -522,6 +581,23 @@ router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError
       user,
       children,
       dashboardEdit: true
+    });
+  }
+  } catch (unexpectedErr) {
+    // Catch-all for any unexpected errors in the entire route
+    console.error('=== DASHBOARD EDIT-FAMILY SUBMISSION FAILED ===');
+    console.error('Timestamp:', new Date().toISOString());
+    console.error('Error Type: Unexpected route error');
+    console.error('Unexpected error in dashboard route:', unexpectedErr);
+    console.error('Error stack:', unexpectedErr.stack);
+    console.error('User ID:', req.session.userId);
+    console.error('Request body keys:', Object.keys(req.body || {}));
+    console.error('Request files count:', req.files ? req.files.length : 0);
+    console.error('=== END DASHBOARD ERROR LOG ===');
+    
+    return res.render('error', {
+      message: 'An unexpected error occurred. Please try again later.',
+      error: process.env.NODE_ENV === 'development' ? unexpectedErr : {}
     });
   }
 });

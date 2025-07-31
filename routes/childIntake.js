@@ -124,10 +124,10 @@ const multerConfig = {
   storage,
   limits: {
     fileSize: 25 * 1024 * 1024, // 25MB for professional model photos
-    files: 10, // Maximum 10 files
+    files: 15, // Maximum 15 files (increased for large families)
     fieldSize: 2 * 1024 * 1024, // 2MB for form fields
     fieldNameSize: 100, // 100 bytes for field names
-    fields: 50 // Maximum 50 non-file fields
+    fields: 150 // Maximum 150 non-file fields (increased for families with 5+ children)
   },
   fileFilter: (req, file, cb) => {
     console.log('Child intake file filter - processing file:', file.originalname, 'mimetype:', file.mimetype);
@@ -147,14 +147,29 @@ const uploadAny = multer(multerConfig).any();
 
 // Enhanced error handling middleware for multer
 const handleMulterError = (err, req, res, next) => {
+  // Log to stderr for cPanel/LiteSpeed environments
+  console.error('=== CHILD INTAKE FORM SUBMISSION FAILED ===');
+  console.error('Timestamp:', new Date().toISOString());
+  console.error('Error Type: Multer/Upload Error');
   console.error('Child intake multer error handler triggered:', err);
   
   if (err instanceof multer.MulterError) {
     console.error('Child intake multer error details:', {
       code: err.code,
       message: err.message,
-      field: err.field
+      field: err.field,
+      stack: err.stack
     });
+    
+    // Log form data context for debugging
+    if (req.body) {
+      const fieldCount = Object.keys(req.body).length;
+      const childCount = Object.keys(req.body).filter(key => key.startsWith('childName')).length;
+      console.error('Form context - Total fields:', fieldCount, 'Children detected:', childCount);
+    }
+    if (req.files) {
+      console.error('Files received:', req.files.length);
+    }
     
     let errorMessage = 'File upload error: ' + err.message;
     
@@ -178,12 +193,13 @@ const handleMulterError = (err, req, res, next) => {
         errorMessage = 'Field value too large. Please reduce the size of form data.';
         break;
       case 'LIMIT_FIELD_COUNT':
-        errorMessage = 'Too many fields. Please reduce the number of form fields.';
+        errorMessage = 'Too many form fields. This can happen with large families (4+ children). Please try submitting fewer children at once, or contact support for assistance with large family registrations.';
         break;
       default:
         errorMessage = `Upload error: ${err.message}`;
     }
     
+    console.error('=== END CHILD INTAKE MULTER ERROR LOG ===');
     return res.render('childIntake', { 
       success: null, 
       errors: [{ msg: errorMessage }], 
@@ -247,6 +263,23 @@ router.post('/',
   uploadAny, // Accept any file fields
   handleMulterError, // Handle upload errors
   async (req, res) => {
+  try {
+    // Enhanced logging for debugging field count issues
+    console.log('=== CHILD INTAKE FORM SUBMISSION DEBUG ===');
+    console.log('Total form fields received:', Object.keys(req.body).length);
+    console.log('Total files received:', req.files ? req.files.length : 0);
+    console.log('Form fields:', Object.keys(req.body));
+    console.log('File fields:', req.files ? req.files.map(f => f.fieldname) : []);
+    
+    // Count child-specific fields
+    const childFields = Object.keys(req.body).filter(key => 
+      key.startsWith('childName') || key.startsWith('childDob') || key.startsWith('childGender') || 
+      key.startsWith('childWeight') || key.startsWith('childHeight')
+    );
+    const childCount = Object.keys(req.body).filter(key => key.startsWith('childName')).length;
+    console.log(`Detected ${childCount} children with ${childFields.length} child-related fields`);
+    console.log('============================================');
+    
     // Parse parent info (now user-level fields)
     const parentFirstName = req.body.parentFirstName;
     const parentLastName = req.body.parentLastName;
@@ -293,7 +326,14 @@ router.post('/',
         });
       }
     } catch (err) {
+      console.error('=== CHILD INTAKE FORM SUBMISSION FAILED ===');
+      console.error('Timestamp:', new Date().toISOString());
+      console.error('Error Type: User account creation/update failed');
       console.error('Error creating/updating user account:', err);
+      console.error('Error stack:', err.stack);
+      console.error('Parent email:', req.body.email);
+      console.error('=== END CHILD INTAKE ERROR LOG ===');
+      
       return res.render('childIntake', { success: null, errors: [{ msg: 'Error creating user account.' }], user: null, children: null, dashboardEdit: req.body.dashboardEdit === 'true' });
     }
 
@@ -313,6 +353,8 @@ router.post('/',
 
     let errors = [];
     let success = null;
+    
+    // Wrap entire child processing logic in comprehensive error handling
     try {
       for (const idx of childIndices) {
         const childName = req.body[`childName${idx}`];
@@ -367,6 +409,14 @@ router.post('/',
         }
       }
       if (errors.length === 0) {
+        // Log successful submission to stderr for monitoring
+        console.error('=== CHILD INTAKE FORM SUBMITTED SUCCESSFULLY ===');
+        console.error('Timestamp:', new Date().toISOString());
+        console.error('Children processed:', childIndices.length);
+        console.error('User email:', parentEmail);
+        console.error('Dashboard edit mode:', req.body.dashboardEdit === 'true');
+        console.error('=== END SUCCESSFUL SUBMISSION LOG ===');
+        
         // Form submitted successfully - respond immediately
         const responseData = {
           success: true,
@@ -400,7 +450,15 @@ router.post('/',
         return res.redirect(`/intake/child/thank-you${queryString ? '?' + queryString : ''}`);
       }
     } catch (err) {
+      console.error('=== CHILD INTAKE FORM SUBMISSION FAILED ===');
+      console.error('Timestamp:', new Date().toISOString());
+      console.error('Error Type: Database operation failed');
       console.error('Error saving child to database:', err);
+      console.error('Error stack:', err.stack);
+      console.error('User ID:', user ? user.id : 'none');
+      console.error('Children being processed:', childIndices.length);
+      console.error('=== END CHILD INTAKE ERROR LOG ===');
+      
       errors.push({ msg: 'Error saving to database.' });
     }
     // Build user object from req.body for error repopulation
@@ -426,9 +484,34 @@ router.post('/',
       photo: req.body[`existingPhoto${idx}`] || null
     }));
     if (errors.length) {
+      console.error('=== CHILD INTAKE FORM VALIDATION FAILED ===');
+      console.error('Timestamp:', new Date().toISOString());
+      console.error('Error Type: Form validation errors');
+      console.error('Validation errors:', errors);
+      console.error('Children attempted:', childIndices.length);
+      console.error('=== END CHILD INTAKE VALIDATION LOG ===');
+      
       return res.render('childIntake', { success: null, errors, user: userForTemplate, children, dashboardEdit: req.body.dashboardEdit === 'true' });
     }
     res.render('childIntake', { success: null, errors: null, user: null, children: null, dashboardEdit: false });
+  } catch (unexpectedErr) {
+    // Catch-all for any unexpected errors in the entire route
+    console.error('=== CHILD INTAKE FORM SUBMISSION FAILED ===');
+    console.error('Timestamp:', new Date().toISOString());
+    console.error('Error Type: Unexpected route error');
+    console.error('Unexpected error in child intake route:', unexpectedErr);
+    console.error('Error stack:', unexpectedErr.stack);
+    console.error('Request body keys:', Object.keys(req.body || {}));
+    console.error('Request files count:', req.files ? req.files.length : 0);
+    console.error('=== END CHILD INTAKE ERROR LOG ===');
+    
+    return res.render('childIntake', { 
+      success: null, 
+      errors: [{ msg: 'An unexpected error occurred. Please try again later.' }], 
+      user: null, 
+      children: null, 
+      dashboardEdit: false 
+    });
   }
 );
 

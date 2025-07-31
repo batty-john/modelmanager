@@ -72,10 +72,10 @@ const multerConfig = {
   storage,
   limits: {
     fileSize: 25 * 1024 * 1024, // 25MB for professional model photos
-    files: 10, // Maximum 10 files
+    files: 15, // Maximum 15 files (increased for large families)
     fieldSize: 2 * 1024 * 1024, // 2MB for form fields
     fieldNameSize: 100, // 100 bytes for field names
-    fields: 50 // Maximum 50 non-file fields
+    fields: 150 // Maximum 150 non-file fields (increased for families with 5+ children)
   },
   fileFilter: (req, file, cb) => {
     console.log('Adult intake file filter - processing file:', file.originalname, 'mimetype:', file.mimetype);
@@ -95,14 +95,29 @@ const uploadAny = multer(multerConfig).any();
 
 // Enhanced error handling middleware for multer
 const handleMulterError = (err, req, res, next) => {
+  // Log to stderr for cPanel/LiteSpeed environments
+  console.error('=== ADULT INTAKE FORM SUBMISSION FAILED ===');
+  console.error('Timestamp:', new Date().toISOString());
+  console.error('Error Type: Multer/Upload Error');
   console.error('Adult intake multer error handler triggered:', err);
   
   if (err instanceof multer.MulterError) {
     console.error('Adult intake multer error details:', {
       code: err.code,
       message: err.message,
-      field: err.field
+      field: err.field,
+      stack: err.stack
     });
+    
+    // Log form data context for debugging
+    if (req.body) {
+      const fieldCount = Object.keys(req.body).length;
+      const adultCount = Object.keys(req.body).filter(key => key.startsWith('firstName')).length;
+      console.error('Form context - Total fields:', fieldCount, 'Adults detected:', adultCount);
+    }
+    if (req.files) {
+      console.error('Files received:', req.files.length);
+    }
     
     let errorMessage = 'File upload error: ' + err.message;
     
@@ -126,7 +141,7 @@ const handleMulterError = (err, req, res, next) => {
         errorMessage = 'Field value too large. Please reduce the size of form data.';
         break;
       case 'LIMIT_FIELD_COUNT':
-        errorMessage = 'Too many fields. Please reduce the number of form fields.';
+        errorMessage = 'Too many form fields. This can happen with large families (4+ children). Please try submitting fewer children at once, or contact support for assistance with large family registrations.';
         break;
       default:
         errorMessage = `Upload error: ${err.message}`;
@@ -144,6 +159,7 @@ const handleMulterError = (err, req, res, next) => {
       brands: req.body ? req.body.brands || '' : ''
     };
     
+    console.error('=== END ADULT INTAKE MULTER ERROR LOG ===');
     return res.render('adultIntake', {
       adults: [{ firstName: '', lastName: '', email: '', phone: '', gender: '', size: '', photo: '' }],
       user: userForTemplate,
@@ -154,6 +170,9 @@ const handleMulterError = (err, req, res, next) => {
   
   // Handle busboy "Unexpected end of form" errors
   if (err.message && err.message.includes('Unexpected end of form')) {
+    console.error('=== ADULT INTAKE FORM SUBMISSION FAILED ===');
+    console.error('Timestamp:', new Date().toISOString());
+    console.error('Error Type: Unexpected end of form');
     console.error('Adult intake busboy "Unexpected end of form" error:', err);
     
     const userForTemplate = {
@@ -168,6 +187,7 @@ const handleMulterError = (err, req, res, next) => {
       brands: req.body ? req.body.brands || '' : ''
     };
     
+    console.error('=== END ADULT INTAKE ERROR LOG ===');
     return res.render('adultIntake', {
       adults: [{ firstName: '', lastName: '', email: '', phone: '', gender: '', size: '', photo: '' }],
       user: userForTemplate,
@@ -183,6 +203,9 @@ const handleMulterError = (err, req, res, next) => {
     err.message.includes('EMFILE') ||
     err.message.includes('ENOSPC')
   )) {
+    console.error('=== ADULT INTAKE FORM SUBMISSION FAILED ===');
+    console.error('Timestamp:', new Date().toISOString());
+    console.error('Error Type: File system error');
     console.error('Adult intake file system error:', err);
     
     const userForTemplate = {
@@ -197,6 +220,7 @@ const handleMulterError = (err, req, res, next) => {
       brands: req.body ? req.body.brands || '' : ''
     };
     
+    console.error('=== END ADULT INTAKE ERROR LOG ===');
     return res.render('adultIntake', {
       adults: [{ firstName: '', lastName: '', email: '', phone: '', gender: '', size: '', photo: '' }],
       user: userForTemplate,
@@ -207,7 +231,11 @@ const handleMulterError = (err, req, res, next) => {
   
   // Generic error handler
   if (err) {
+    console.error('=== ADULT INTAKE FORM SUBMISSION FAILED ===');
+    console.error('Timestamp:', new Date().toISOString());
+    console.error('Error Type: Generic upload error');
     console.error('Adult intake generic upload error:', err);
+    console.error('Error stack:', err.stack);
     
     const userForTemplate = {
       parentFirstName: req.body ? req.body['firstName0'] : '',
@@ -221,6 +249,7 @@ const handleMulterError = (err, req, res, next) => {
       brands: req.body ? req.body.brands || '' : ''
     };
     
+    console.error('=== END ADULT INTAKE ERROR LOG ===');
     return res.render('adultIntake', {
       adults: [{ firstName: '', lastName: '', email: '', phone: '', gender: '', size: '', photo: '' }],
       user: userForTemplate,
