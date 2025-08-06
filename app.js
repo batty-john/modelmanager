@@ -304,6 +304,15 @@ app.get('/client-login', (req, res) => {
   res.render('clientLogin');
 });
 
+// Redirect routes for client access
+app.get('/client', (req, res) => {
+  res.redirect('/client-login');
+});
+
+app.get('/clients', (req, res) => {
+  res.redirect('/client-login');
+});
+
 // Session debug page
 app.get('/session-debug', (req, res) => {
   res.render('sessionDebug');

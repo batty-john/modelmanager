@@ -67,18 +67,22 @@ function calculateChildSize(weight, height) {
     return null;
   }
   
-  // Complete size chart based on weight ranges (defaulting to larger size for overlaps)
-  // Check from largest to smallest to default to larger sizes in overlaps
+  // Complete size chart based on weight ranges (defaulting to smaller size for overlaps)
+  // Check from largest to smallest to default to smaller sizes in overlaps
   
   // Very large children
-  if (weightNum >= 72) {
+  if (weightNum >= 84) {
     return '10Y-12Y';
   } else if (weightNum >= 49) {
     return '7Y-8Y';
+  } else if (weightNum >= 44) {
+    return '5T-6T';
   } else if (weightNum >= 39) {
-    return '5T-6T'; // Fixed capitalization
-  } else if (weightNum >= 31) {
+    return '4T';
+  } else if (weightNum >= 34) {
     return '3T-4T';
+  } else if (weightNum >= 31) {
+    return '3T';
   } else if (weightNum >= 28) {
     return '2T';
   } else if (weightNum >= 25) {
@@ -86,11 +90,11 @@ function calculateChildSize(weight, height) {
   } else if (weightNum >= 22) {
     return '12-18 Months';
   }
-  // Handle overlapping ranges for smaller sizes (default to larger/older size)
+  // Handle overlapping ranges for smaller sizes (default to smaller/younger size)
   else if (weightNum >= 20) {
-    return '9-12 Months'; // Larger of the overlapping options
+    return '6-9 Months'; // Smaller of the overlapping options
   } else if (weightNum >= 17) {
-    return '6-12 Months'; // Larger of the overlapping options  
+    return '6-9 Months'; // Smaller of the overlapping options  
   } else if (weightNum >= 12) {
     return '3-6 Months';
   } else if (weightNum >= 9) {
