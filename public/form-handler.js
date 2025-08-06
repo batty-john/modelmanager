@@ -230,6 +230,56 @@ class EnhancedFormHandler {
     return { isValid: true };
   }
 
+  // Client-side image compression helper
+  async compressImage(file, maxWidth = 1920, maxHeight = 1920, quality = 0.8) {
+    return new Promise((resolve) => {
+      // If file is already small enough, don't compress
+      if (file.size < 2 * 1024 * 1024) { // Less than 2MB
+        resolve(file);
+        return;
+      }
+
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+
+      img.onload = () => {
+        // Calculate new dimensions
+        let { width, height } = img;
+        
+        if (width > maxWidth || height > maxHeight) {
+          const ratio = Math.min(maxWidth / width, maxHeight / height);
+          width *= ratio;
+          height *= ratio;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        // Draw and compress
+        ctx.drawImage(img, 0, 0, width, height);
+        
+        canvas.toBlob((blob) => {
+          if (blob && blob.size < file.size) {
+            // Create a new File object with the compressed data
+            const compressedFile = new File([blob], file.name, {
+              type: 'image/jpeg',
+              lastModified: Date.now()
+            });
+            console.log(`📦 Compressed ${file.name}: ${(file.size / 1024 / 1024).toFixed(2)}MB → ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
+            resolve(compressedFile);
+          } else {
+            // Compression didn't help or failed, use original
+            resolve(file);
+          }
+        }, 'image/jpeg', quality);
+      };
+
+      img.onerror = () => resolve(file); // Fallback to original on error
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   addFileValidation(form) {
     const fileInputs = form.querySelectorAll('input[type="file"]');
     

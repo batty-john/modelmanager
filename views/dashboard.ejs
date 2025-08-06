@@ -27,7 +27,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <% children.forEach(child => { %>
           <div class="bg-white rounded shadow p-4 flex flex-col items-center">
-            <img src="<%= child.photo %>" alt="Child Photo" class="w-24 h-24 rounded-full object-cover mb-2">
+            <img src="<%= imageProcessor.getBestImagePath(child.photo, 'thumbnail') %>" alt="Child Photo" class="w-24 h-24 rounded-full object-cover mb-2">
             <div class="font-semibold"><%= child.childFirstName %></div>
             <div class="text-sm text-gray-600 mb-2">DOB: <%= child.childDOB %></div>
             <div class="flex gap-2 mt-2">
@@ -51,7 +51,7 @@
           <% adults.forEach(adult => { %>
             <div class="bg-white rounded shadow p-4 flex flex-col items-center">
               <% if (adult.photo) { %>
-                <img src="<%= adult.photo %>" alt="Adult Photo" class="w-24 h-24 rounded-full object-cover mb-2">
+                <img src="<%= imageProcessor.getBestImagePath(adult.photo, 'thumbnail') %>" alt="Adult Photo" class="w-24 h-24 rounded-full object-cover mb-2">
               <% } %>
               <div class="font-semibold"><%= adult.firstName %> <%= adult.lastName %></div>
               <div class="text-sm text-gray-600 mb-2"><%= adult.email %></div>

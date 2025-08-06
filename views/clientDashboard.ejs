@@ -143,7 +143,7 @@
              data-size="<%= adult.size %>"
              data-approval="<%= adult.approvalStatus %>">
          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
-            <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" />
+            <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" loading="lazy" />
           </div>
           <div class="p-4 flex flex-col items-center">
             <div class="font-bold text-lg mb-1 text-center"><%= adult.firstName %></div>
@@ -187,7 +187,7 @@
              data-size="<%= child.childSize %>"
              data-approval="<%= child.approvalStatus %>">
          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
-            <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" />
+            <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" loading="lazy" />
           </div>
           <div class="p-4 flex flex-col items-center">
             <div class="font-bold text-lg mb-1 text-center"><%= child.childFirstName %></div>

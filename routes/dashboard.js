@@ -11,6 +11,7 @@ const ModelApproval = require('../models/ModelApproval');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const fs = require('fs'); // Added for file deletion
+const imageProcessor = require('../utils/imageProcessor');
 
 // Middleware to require login
 function requireLogin(req, res, next) {
@@ -64,14 +65,10 @@ function calculateChildSize(weight, height) {
     return '10Y-12Y';
   } else if (weightNum >= 49) {
     return '7Y-8Y';
-  } else if (weightNum >= 44) {
-    return '5T-6T';
   } else if (weightNum >= 39) {
-    return '4T';
-  } else if (weightNum >= 34) {
-    return '3T-4T';
+    return '5T-6T'; // Keep as group 39-48 lbs
   } else if (weightNum >= 31) {
-    return '3T';
+    return '3T-4T'; // Keep as group 31-38 lbs
   } else if (weightNum >= 28) {
     return '2T';
   } else if (weightNum >= 25) {
@@ -238,12 +235,79 @@ const handleMulterError = (err, req, res, next) => {
   next();
 };
 
+// Helper function to get the best photo path for database storage
+function getBestPhotoPath(req, filename, fallbackPath = '') {
+  if (!filename) return fallbackPath;
+  
+  // Check if we have processing results for this file
+  if (req.imageProcessingResults) {
+    const result = req.imageProcessingResults.find(r => r.filename === filename);
+    if (result && result.success) {
+      // Use compressed version for storage - this is the optimal size for display
+      return result.compressed;
+    }
+  }
+  
+  // Fallback to original path
+  return `/public/uploads/${filename}`;
+}
+
+// Middleware to process uploaded images
+const processUploadedImages = async (req, res, next) => {
+  if (!req.file && (!req.files || req.files.length === 0)) {
+    return next(); // No files to process
+  }
+
+  try {
+    const filesToProcess = [];
+    
+    if (req.file) {
+      filesToProcess.push(req.file.filename);
+    }
+    
+    if (req.files) {
+      req.files.forEach(file => {
+        filesToProcess.push(file.filename);
+      });
+    }
+
+    console.log(`🖼️  Processing ${filesToProcess.length} uploaded images...`);
+    
+    // Process images in parallel
+    const results = await imageProcessor.processImages(filesToProcess);
+    
+    // Attach processing results to request for use in route handlers
+    req.imageProcessingResults = results;
+    
+    // Log results
+    results.forEach(result => {
+      if (result.success) {
+        console.log(`✅ Successfully processed: ${result.filename}`);
+      } else {
+        console.log(`⚠️  Failed to process: ${result.filename} - ${result.error}`);
+      }
+    });
+
+    next();
+  } catch (error) {
+    console.error('Error in image processing middleware:', error);
+    // Don't fail the request if image processing fails, just log and continue
+    req.imageProcessingResults = [];
+    next();
+  }
+};
+
 // GET /dashboard
 router.get('/dashboard', requireLogin, async (req, res) => {
   try {
     const children = await ChildModel.findAll({ where: { userId: req.session.userId } });
     const adults = await AdultModel.findAll({ where: { userId: req.session.userId } });
-    res.render('dashboard', { userEmail: req.session.userEmail, children, adults });
+    res.render('dashboard', { 
+      userEmail: req.session.userEmail, 
+      children, 
+      adults,
+      imageProcessor: imageProcessor // Pass imageProcessor for view helper
+    });
   } catch (err) {
     console.error('Error in GET /dashboard:', err);
     res.status(500).send('Server error');
@@ -256,7 +320,7 @@ router.get('/dashboard/add/child', requireLogin, (req, res) => {
 });
 
 // POST /dashboard/add/child
-router.post('/dashboard/add/child', requireLogin, uploadSingle, handleMulterError, async (req, res) => {
+router.post('/dashboard/add/child', requireLogin, uploadSingle, handleMulterError, processUploadedImages, async (req, res) => {
   const { childFirstName, childDOB, childGender, childWeight } = req.body;
   if (!childFirstName || !childDOB || !childGender || !childWeight) {
     return res.render('childForm', { editing: false, formAction: '/dashboard/add/child', child: null, error: 'All fields are required.' });
@@ -274,7 +338,7 @@ router.post('/dashboard/add/child', requireLogin, uploadSingle, handleMulterErro
     await existing.update({
       childGender,
       childWeight,
-      photo: req.file ? '/public/uploads/' + req.file.filename : existing.photo,
+      photo: req.file ? getBestPhotoPath(req, req.file.filename, existing.photo) : existing.photo,
     });
     return res.redirect('/dashboard');
   } else {
@@ -287,7 +351,7 @@ router.post('/dashboard/add/child', requireLogin, uploadSingle, handleMulterErro
       childDOB,
       childGender,
       childWeight,
-      photo: req.file ? '/public/uploads/' + req.file.filename : '',
+      photo: req.file ? getBestPhotoPath(req, req.file.filename, '') : '',
       preferredContact: '',
       facebookProfileLink: '',
       hasModeledBefore: false,
@@ -307,7 +371,7 @@ router.get('/dashboard/edit/child/:id', requireLogin, async (req, res) => {
 });
 
 // POST /dashboard/edit/child/:id
-router.post('/dashboard/edit/child/:id', requireLogin, uploadSingle, handleMulterError, async (req, res) => {
+router.post('/dashboard/edit/child/:id', requireLogin, uploadSingle, handleMulterError, processUploadedImages, async (req, res) => {
   const { childFirstName, childDOB, childGender, childWeight, childHeight } = req.body;
   const child = await ChildModel.findOne({ where: { id: req.params.id, parentEmail: req.session.userEmail } });
   if (!child) {
@@ -326,7 +390,7 @@ router.post('/dashboard/edit/child/:id', requireLogin, uploadSingle, handleMulte
     childWeight,
     childHeight,
     childSize: calculatedSize,
-    photo: req.file ? '/public/uploads/' + req.file.filename : child.photo,
+    photo: req.file ? getBestPhotoPath(req, req.file.filename, child.photo) : child.photo,
   });
   res.redirect('/dashboard');
 });
@@ -356,7 +420,7 @@ router.get('/dashboard/edit-family', requireLogin, async (req, res) => {
 });
 
 // POST /dashboard/edit-family
-router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError, async (req, res) => {
+router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError, processUploadedImages, async (req, res) => {
   try {
   // Enhanced logging for debugging field count issues
   console.log('=== DASHBOARD EDIT-FAMILY SUBMISSION DEBUG ===');
@@ -512,7 +576,7 @@ router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError
           childWeight,
           childHeight,
           childSize: calculatedSize,
-          photo: photoFile ? '/public/uploads/' + photoFile.filename : existingPhoto,
+          photo: photoFile ? getBestPhotoPath(req, photoFile.filename, existingPhoto) : existingPhoto,
         });
       } else {
         // Create new
@@ -527,7 +591,7 @@ router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError
           childWeight,
           childHeight,
           childSize: calculatedSize,
-          photo: photoFile ? '/public/uploads/' + photoFile.filename : '',
+          photo: photoFile ? getBestPhotoPath(req, photoFile.filename, '') : '',
           userId: req.session.userId,
         });
       }

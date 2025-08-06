@@ -308,7 +308,7 @@
         <tbody>
           <% adults.forEach(function(adult) { %>
             <tr class="border-b" data-model-type="adult" data-model-id="<%= adult.id %>" data-dob="<%= adult.dob || '' %>">
-              <td class="px-4 py-2" style="width:64px;min-width:64px;"><img src="<%= adult.photo %>" class="w-12 h-12 rounded-full object-cover" /></td>
+                              <td class="px-4 py-2" style="width:64px;min-width:64px;"><img src="<%= adult.photo %>" class="w-12 h-12 rounded-full object-cover" loading="lazy" /></td>
               <td class="px-4 py-2"><input type="text" value="<%= adult.firstName %>" class="input-gold w-24 first-name-input" /></td>
               <td class="px-4 py-2"><input type="text" value="<%= adult.lastName %>" class="input-gold w-24 last-name-input" /></td>
               <td class="px-4 py-2">Adult</td>
@@ -366,7 +366,7 @@
           <% }); %>
           <% children.forEach(function(child) { %>
             <tr class="border-b" data-model-type="child" data-model-id="<%= child.id %>" data-dob="<%= child.childDOB || '' %>">
-              <td class="px-4 py-2" style="width:64px;min-width:64px;"><img src="<%= child.photo %>" class="w-12 h-12 rounded-full object-cover" /></td>
+                              <td class="px-4 py-2" style="width:64px;min-width:64px;"><img src="<%= child.photo %>" class="w-12 h-12 rounded-full object-cover" loading="lazy" /></td>
               <td class="px-4 py-2"><input type="text" value="<%= child.childFirstName %>" class="input-gold w-24 first-name-input" /></td>
               <td class="px-4 py-2"><input type="text" value="<%= child.childLastName || '' %>" class="input-gold w-24 last-name-input" /></td>
               <td class="px-4 py-2">Child</td>
@@ -438,7 +438,7 @@
       <% adults.forEach(function(adult) { %>
         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="adult" data-model-id="<%= adult.id %>" data-dob="<%= adult.dob || '' %>">
           <div class="w-full h-64 bg-gray-200 flex-shrink-0">
-            <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" />
+            <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" loading="lazy" />
           </div>
           <div class="p-4 flex flex-col items-center">
             <div class="font-bold text-lg mb-1"><%= adult.firstName %> <%= adult.lastName %></div>
@@ -470,7 +470,7 @@
       <% children.forEach(function(child) { %>
         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="child" data-model-id="<%= child.id %>" data-dob="<%= child.childDOB || '' %>">
           <div class="w-full h-64 bg-gray-200 flex-shrink-0">
-            <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" />
+            <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" loading="lazy" />
           </div>
           <div class="p-4 flex flex-col items-center">
             <div class="font-bold text-lg mb-1"><%= child.childFirstName %> <%= child.childLastName || '' %></div>

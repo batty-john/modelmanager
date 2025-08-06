@@ -8,6 +8,7 @@ const { body, validationResult } = require('express-validator');
 const ChildModel = require('../models/ChildModel');
 const User = require('../models/User');
 const crypto = require('crypto');
+const imageProcessor = require('../utils/imageProcessor');
 
 // Asynchronous email sending function
 async function sendWelcomeEmailAsync(email, password) {
@@ -75,14 +76,10 @@ function calculateChildSize(weight, height) {
     return '10Y-12Y';
   } else if (weightNum >= 49) {
     return '7Y-8Y';
-  } else if (weightNum >= 44) {
-    return '5T-6T';
   } else if (weightNum >= 39) {
-    return '4T';
-  } else if (weightNum >= 34) {
-    return '3T-4T';
+    return '5T-6T'; // Keep as group 39-48 lbs
   } else if (weightNum >= 31) {
-    return '3T';
+    return '3T-4T'; // Keep as group 31-38 lbs
   } else if (weightNum >= 28) {
     return '2T';
   } else if (weightNum >= 25) {
@@ -257,6 +254,68 @@ const handleMulterError = (err, req, res, next) => {
   next();
 };
 
+// Helper function to get the best photo path for database storage
+function getBestPhotoPath(req, filename, fallbackPath = '') {
+  if (!filename) return fallbackPath;
+  
+  // Check if we have processing results for this file
+  if (req.imageProcessingResults) {
+    const result = req.imageProcessingResults.find(r => r.filename === filename);
+    if (result && result.success) {
+      // Use compressed version for storage - this is the optimal size for display
+      return result.compressed;
+    }
+  }
+  
+  // Fallback to original path
+  return `/public/uploads/${filename}`;
+}
+
+// Middleware to process uploaded images
+const processUploadedImages = async (req, res, next) => {
+  if (!req.file && (!req.files || req.files.length === 0)) {
+    return next(); // No files to process
+  }
+
+  try {
+    const filesToProcess = [];
+    
+    if (req.file) {
+      filesToProcess.push(req.file.filename);
+    }
+    
+    if (req.files) {
+      req.files.forEach(file => {
+        filesToProcess.push(file.filename);
+      });
+    }
+
+    console.log(`🖼️  Processing ${filesToProcess.length} uploaded images in child intake...`);
+    
+    // Process images in parallel
+    const results = await imageProcessor.processImages(filesToProcess);
+    
+    // Attach processing results to request for use in route handlers
+    req.imageProcessingResults = results;
+    
+    // Log results
+    results.forEach(result => {
+      if (result.success) {
+        console.log(`✅ Successfully processed: ${result.filename}`);
+      } else {
+        console.log(`⚠️  Failed to process: ${result.filename} - ${result.error}`);
+      }
+    });
+
+    next();
+  } catch (error) {
+    console.error('Error in image processing middleware:', error);
+    // Don't fail the request if image processing fails, just log and continue
+    req.imageProcessingResults = [];
+    next();
+  }
+};
+
 // GET intake form
 router.get('/', (req, res) => {
   res.render('childIntake', { success: null, errors: null, user: null, children: null, dashboardEdit: false });
@@ -266,6 +325,7 @@ router.get('/', (req, res) => {
 router.post('/',
   uploadAny, // Accept any file fields
   handleMulterError, // Handle upload errors
+  processUploadedImages, // Process uploaded images
   async (req, res) => {
   try {
     // Enhanced logging for debugging field count issues
@@ -384,7 +444,7 @@ router.post('/',
           errors.push({ msg: `Missing required fields for child ${parseInt(idx) + 1}` });
           continue;
         }
-        const photoPath = photoFile ? '/public/uploads/' + photoFile.filename : existingPhoto;
+        const photoPath = photoFile ? getBestPhotoPath(req, photoFile.filename, existingPhoto) : existingPhoto;
         // Calculate child size based on weight and height
         const calculatedSize = calculateChildSize(childWeight, childHeight);
         
