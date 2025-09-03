@@ -134,12 +134,56 @@ class ImageProcessor {
   }
 
   /**
-   * Get the best image path for display based on context
+   * Get the best image path for display based on context, checking if files exist
    * @param {string} originalPath - Original image path
    * @param {string} context - 'thumbnail', 'compressed', or 'original'
    * @returns {string} - Best path to use
    */
-  getBestImagePath(originalPath, context = 'compressed') {
+  async getBestImagePath(originalPath, context = 'compressed') {
+    if (!originalPath || !originalPath.includes('/public/uploads/')) {
+      return originalPath;
+    }
+
+    const filename = path.basename(originalPath);
+    const nameWithoutExt = path.parse(filename).name;
+
+    let preferredPath;
+    let fallbackPath;
+
+    switch (context) {
+      case 'thumbnail':
+        preferredPath = path.join(this.thumbnailsDir, `${nameWithoutExt}_thumb.jpg`);
+        fallbackPath = originalPath;
+        break;
+      case 'compressed':
+        preferredPath = path.join(this.compressedDir, `${nameWithoutExt}_compressed.jpg`);
+        fallbackPath = originalPath;
+        break;
+      case 'original':
+      default:
+        return originalPath;
+    }
+
+    // Check if preferred version exists
+    try {
+      await fs.access(preferredPath);
+      // Return the processed version path if it exists
+      return context === 'thumbnail'
+        ? `/public/uploads/thumbnails/${nameWithoutExt}_thumb.jpg`
+        : `/public/uploads/compressed/${nameWithoutExt}_compressed.jpg`;
+    } catch (error) {
+      // File doesn't exist, return fallback
+      return fallbackPath;
+    }
+  }
+
+  /**
+   * Synchronous version for templates - checks cache first
+   * @param {string} originalPath - Original image path
+   * @param {string} context - 'thumbnail', 'compressed', or 'original'
+   * @returns {string} - Best path to use
+   */
+  getBestImagePathSync(originalPath, context = 'compressed') {
     if (!originalPath || !originalPath.includes('/public/uploads/')) {
       return originalPath;
     }

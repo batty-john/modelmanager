@@ -48,56 +48,9 @@ async function requireClient(req, res, next) {
   next();
 }
 
-// Function to calculate child size based on weight and height
-function calculateChildSize(weight, height) {
-  const weightNum = parseFloat(weight);
-  const heightNum = parseFloat(height);
-  
-  if (isNaN(weightNum) || isNaN(heightNum)) {
-    return null;
-  }
-  
-  // Complete size chart based on weight ranges (defaulting to smaller size for overlaps)
-  // Check from largest to smallest to default to smaller sizes in overlaps
-  
-  // Very large children
-  if (weightNum >= 84) {
-    return '10Y-12Y';
-  } else if (weightNum >= 49) {
-    return '7Y-8Y';
-  } else if (weightNum >= 39) {
-    return '5T-6T'; // Keep as group 39-48 lbs
-  } else if (weightNum >= 31) {
-    return '3T-4T'; // Keep as group 31-38 lbs
-  } else if (weightNum >= 28) {
-    return '2T';
-  } else if (weightNum >= 25) {
-    return '18-24 Months';
-  } else if (weightNum >= 22) {
-    return '12-18 Months';
-  }
-  // Handle overlapping ranges for smaller sizes (default to smaller/younger size)
-  else if (weightNum >= 20) {
-    return '6-9 Months'; // Smaller of the overlapping options
-  } else if (weightNum >= 17) {
-    return '6-9 Months'; // Smaller of the overlapping options  
-  } else if (weightNum >= 12) {
-    return '3-6 Months';
-  } else if (weightNum >= 9) {
-    return '0-3 Months';
-  } else if (weightNum >= 6) {
-    return 'Newborn';
-  } else if (weightNum >= 0) {
-    return 'Preemie';
-  }
-  
-  // Handle edge cases
-  if (weightNum > 101) {
-    return '10Y-12Y';  // Very large children default to largest size
-  }
-  
-  return null; // Should rarely reach here now
-}
+// Import the new size calculation utilities
+const { calculateChildSize, calculateChildSizes, hasOverlappingSizes } = require('../utils/sizeCalculator');
+const { updateChildSizes, getChildrenBySize } = require('../utils/childSizeManager');
 
 // Multer setup for file uploads
 const storage = multer.diskStorage({
@@ -300,7 +253,14 @@ const processUploadedImages = async (req, res, next) => {
 // GET /dashboard
 router.get('/dashboard', requireLogin, async (req, res) => {
   try {
-    const children = await ChildModel.findAll({ where: { userId: req.session.userId } });
+    const children = await ChildModel.findAll({ 
+      where: { userId: req.session.userId },
+      include: [{
+        model: require('../models').ChildSize,
+        as: 'sizes',
+        required: false
+      }]
+    });
     const adults = await AdultModel.findAll({ where: { userId: req.session.userId } });
     res.render('dashboard', { 
       userEmail: req.session.userEmail, 
@@ -392,6 +352,10 @@ router.post('/dashboard/edit/child/:id', requireLogin, uploadSingle, handleMulte
     childSize: calculatedSize,
     photo: req.file ? getBestPhotoPath(req, req.file.filename, child.photo) : child.photo,
   });
+  
+  // Update multiple sizes for the child
+  await updateChildSizes(child.id, childWeight, childHeight);
+  
   res.redirect('/dashboard');
 });
 
@@ -408,7 +372,14 @@ router.post('/dashboard/delete/child/:id', requireLogin, async (req, res) => {
 router.get('/dashboard/edit-family', requireLogin, async (req, res) => {
   // Get user info and all children for this user
   const user = await User.findByPk(req.session.userId);
-  const children = await ChildModel.findAll({ where: { userId: req.session.userId } });
+  const children = await ChildModel.findAll({ 
+    where: { userId: req.session.userId },
+    include: [{
+      model: require('../models').ChildSize,
+      as: 'sizes',
+      required: false
+    }]
+  });
   
   res.render('childIntake', {
     success: null,
@@ -480,7 +451,14 @@ router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError
     }
 
     // Get all existing children for this user (moved before validation)
-    const existingChildren = await ChildModel.findAll({ where: { userId: req.session.userId } });
+    const existingChildren = await ChildModel.findAll({ 
+      where: { userId: req.session.userId },
+      include: [{
+        model: require('../models').ChildSize,
+        as: 'sizes',
+        required: false
+      }]
+    });
     const existingByKey = {};
     existingChildren.forEach(child => {
       const key = `${child.childFirstName}|${child.childDOB}`;
@@ -578,12 +556,15 @@ router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError
           childSize: calculatedSize,
           photo: photoFile ? getBestPhotoPath(req, photoFile.filename, existingPhoto) : existingPhoto,
         });
+        
+        // Update multiple sizes for existing child
+        await updateChildSizes(existingByKey[key].id, childWeight, childHeight);
       } else {
         // Create new
         // Calculate child size based on weight and height
         const calculatedSize = calculateChildSize(childWeight, childHeight);
         
-        await ChildModel.create({
+        const newChild = await ChildModel.create({
           childFirstName,
           childLastName: null, // Always null, only editable from admin dashboard
           childDOB,
@@ -594,6 +575,9 @@ router.post('/dashboard/edit-family', requireLogin, uploadAny, handleMulterError
           photo: photoFile ? getBestPhotoPath(req, photoFile.filename, '') : '',
           userId: req.session.userId,
         });
+        
+        // Set up multiple sizes for new child
+        await updateChildSizes(newChild.id, childWeight, childHeight);
       }
     }
     // Remove children that were deleted from the form
@@ -795,7 +779,12 @@ router.post('/dashboard/edit-adult', requireLogin, uploadAny, handleMulterError,
 // GET /admin/models (Admin dashboard for all models)
 router.get('/admin/models', requireAdmin, async (req, res) => {
   // Extract filters and sorting from query params
-  const { gender, minAge, maxAge, weight, size, brands, excludeBrands, modelType, sort, view, clientId, shootId, approvalStatus } = req.query;
+  const { gender, minAge, maxAge, weight, size, brands, excludeBrands, modelType, sort, view, clientId, shootId, approvalStatus, page, limit } = req.query;
+
+  // For now, load everything on initial render (disable pagination)
+  const currentPage = 1;
+  const itemsPerPage = Number.MAX_SAFE_INTEGER;
+  const offset = 0;
   
   // Build queries for adults and children
   const adultWhere = {};
@@ -806,13 +795,64 @@ router.get('/admin/models', requireAdmin, async (req, res) => {
   }
   if (size) {
     adultWhere.size = size;
-    childWhere.childSize = size; // Use childSize field for children
   }
   
   // Add more filters as needed (age, weight, brands, etc.)
-  // Fetch all adults and children
-  const adults = modelType !== 'child' ? await AdultModel.findAll({ where: adultWhere }) : [];
-  const children = modelType !== 'adult' ? await ChildModel.findAll({ where: childWhere }) : [];
+  // Fetch adults and children with pagination
+  let adults = [];
+  let children = [];
+  let totalAdults = 0;
+  let totalChildren = 0;
+
+  if (modelType !== 'child') {
+    // Get total count
+    totalAdults = await AdultModel.count({ where: adultWhere });
+
+    // Fetch all adults
+    adults = await AdultModel.findAll({
+      where: adultWhere,
+      order: [['createdAt', 'DESC']] // Default ordering
+    });
+  }
+
+  if (modelType !== 'adult') {
+    if (size) {
+      // For size filtering, find children that have this size in their ChildSizes
+      const childIds = await getChildrenBySize(size);
+      if (childIds.length > 0) {
+        childWhere.id = { [require('sequelize').Op.in]: childIds };
+      } else {
+        // No children match this size, return empty array
+        childWhere.id = -1; // This will match no records
+      }
+    }
+
+    // Get total count
+    totalChildren = await ChildModel.count({
+      where: childWhere,
+      include: [{
+        model: require('../models').ChildSize,
+        as: 'sizes',
+        required: false
+      }]
+    });
+
+    // Fetch all children
+    children = await ChildModel.findAll({
+      where: childWhere,
+      include: [{
+        model: require('../models').ChildSize,
+        as: 'sizes',
+        required: false
+      }],
+      order: [['createdAt', 'DESC']] // Default ordering
+    });
+  }
+
+  // Calculate pagination info
+  const totalItems = totalAdults + totalChildren;
+  const hasNextPage = false;
+  const hasPrevPage = false;
 
   // Fetch and merge user-level fields for each adult
   for (const adult of adults) {
@@ -890,18 +930,286 @@ router.get('/admin/models', requireAdmin, async (req, res) => {
     });
   }
 
+
+
+
+
   // Pass everything to the template
   res.render('adminModels', {
     adults,
     children,
     filters: req.query,
+    modelType: req.query.modelType || '',
+    size: req.query.size || '',
     viewMode: view || 'spreadsheet',
     sort,
     clients,
     shoots,
     selectedClientId: clientId,
-    selectedShootId: shootId
+    selectedShootId: shootId,
+    // Pagination data
+    pagination: {
+      currentPage,
+      itemsPerPage,
+      totalItems,
+      totalAdults,
+      totalChildren,
+      hasNextPage,
+      hasPrevPage,
+      totalPages: Math.ceil(totalItems / itemsPerPage)
+    }
   });
+});
+
+// Debug endpoint for checking raw model data
+router.get('/admin/models/debug', requireAdmin, async (req, res) => {
+  try {
+    const adults = await AdultModel.findAll({ limit: 2 });
+    const children = await ChildModel.findAll({ limit: 2 });
+
+    res.json({
+      adults: adults.map(a => ({ id: a.id, userId: a.userId, firstName: a.firstName })),
+      children: children.map(c => ({ id: c.id, userId: c.userId, childFirstName: c.childFirstName }))
+    });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// Debug endpoint for checking user data
+router.get('/admin/models/debug-users', requireAdmin, async (req, res) => {
+  try {
+    const { userIds } = req.query;
+
+    if (!userIds) {
+      return res.json({ error: 'userIds parameter required' });
+    }
+
+    const ids = userIds.split(',').map(id => parseInt(id.trim()));
+
+    const users = [];
+    for (const userId of ids) {
+      try {
+        const user = await User.findByPk(userId);
+        users.push({
+          userId,
+          found: !!user,
+          data: user ? {
+            email: user.email,
+            parentPhone: user.parentPhone,
+            brands: user.brands,
+            facebookProfileLink: user.facebookProfileLink,
+            instagramProfileLink: user.instagramProfileLink
+          } : null
+        });
+      } catch (error) {
+        users.push({
+          userId,
+          found: false,
+          error: error.message
+        });
+      }
+    }
+
+    res.json({ users });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
+});
+
+// API endpoint for loading more models (lazy pagination)
+router.get('/admin/models/api', requireAdmin, async (req, res) => {
+  try {
+    // Extract filters and pagination from query params
+    const { gender, minAge, maxAge, weight, size, brands, excludeBrands, modelType, sort, clientId, shootId, approvalStatus, page, limit } = req.query;
+
+    // Pagination settings
+    const currentPage = parseInt(page) || 1;
+    const itemsPerPage = parseInt(limit) || 25;
+    const offset = (currentPage - 1) * itemsPerPage;
+
+    // Build queries for adults and children
+    const adultWhere = {};
+    const childWhere = {};
+
+    if (gender) {
+      adultWhere.gender = gender;
+      childWhere.childGender = gender;
+    }
+    if (size) {
+      adultWhere.size = size;
+    }
+
+    // Calculate total items for pagination
+    let totalAdults = 0;
+    let totalChildren = 0;
+
+    if (modelType !== 'child') {
+      totalAdults = await AdultModel.count({ where: adultWhere });
+    }
+
+    if (modelType !== 'adult') {
+      if (size) {
+        const childIds = await getChildrenBySize(size);
+        if (childIds.length > 0) {
+          childWhere.id = { [require('sequelize').Op.in]: childIds };
+        } else {
+          childWhere.id = -1;
+        }
+      }
+      totalChildren = await ChildModel.count({
+        where: childWhere,
+        include: [{
+          model: require('../models').ChildSize,
+          as: 'sizes',
+          required: false
+        }]
+      });
+    }
+
+    const totalItems = totalAdults + totalChildren;
+
+    // Fetch adults and children with pagination
+    let adults = [];
+    let children = [];
+
+    if (modelType !== 'child') {
+      adults = await AdultModel.findAll({
+        where: adultWhere,
+        limit: itemsPerPage,
+        offset: offset,
+        order: [['createdAt', 'DESC']]
+      });
+    }
+
+    if (modelType !== 'adult') {
+      // Apply size filter for fetch (same as count)
+      if (size) {
+        const childIds = await getChildrenBySize(size);
+        if (childIds.length > 0) {
+          childWhere.id = { [require('sequelize').Op.in]: childIds };
+        } else {
+          childWhere.id = -1;
+        }
+      }
+
+      children = await ChildModel.findAll({
+        where: childWhere,
+        include: [{
+          model: require('../models').ChildSize,
+          as: 'sizes',
+          required: false
+        }],
+        limit: itemsPerPage,
+        offset: offset,
+        order: [['createdAt', 'DESC']]
+      });
+    }
+
+    // Process user data for adults (same as original route)
+    for (const adult of adults) {
+      if (adult.userId) {
+        try {
+          const user = await User.findByPk(adult.userId);
+          if (user) {
+            adult.brandsWorkedWith = user.brands || '';
+            adult.phone = user.parentPhone || '';
+            adult.email = user.email || '';
+            adult.preferredContact = user.preferredContact || '';
+            adult.facebookProfileLink = user.facebookProfileLink || '';
+            adult.instagramProfileLink = user.instagramProfileLink || '';
+            adult.parentFirstName = user.parentFirstName || '';
+            adult.parentLastName = user.parentLastName || '';
+          } else {
+            console.log(`API: User not found for adult ${adult.id}, userId: ${adult.userId}`);
+          }
+        } catch (error) {
+          console.log(`API: Error finding user for adult ${adult.id}:`, error.message);
+        }
+      }
+    }
+
+    // Process user data for children (same as original route)
+    for (const child of children) {
+      if (child.userId) {
+        try {
+          const user = await User.findByPk(child.userId);
+          if (user) {
+            child.brandsWorkedWith = user.brands || '';
+            child.parentPhone = user.parentPhone || '';
+            child.parentEmail = user.email || '';
+            child.preferredContact = user.preferredContact || '';
+            child.facebookProfileLink = user.facebookProfileLink || '';
+            child.instagramProfileLink = user.instagramProfileLink || '';
+            child.parentFirstName = user.parentFirstName || '';
+            child.parentLastName = user.parentLastName || '';
+          } else {
+            console.log(`API: User not found for child ${child.id}, userId: ${child.userId}`);
+          }
+        } catch (error) {
+          console.log(`API: Error finding user for child ${child.id}:`, error.message);
+        }
+      }
+    }
+
+
+
+    // If a shoot is selected, fetch approval status
+    if (shootId) {
+      for (const adult of adults) {
+        const approval = await ModelApproval.findOne({
+          where: { shootId, modelType: 'adult', modelId: adult.id }
+        });
+        adult.approvalStatus = approval ? approval.approvalStatus : null;
+      }
+
+      for (const child of children) {
+        const approval = await ModelApproval.findOne({
+          where: { shootId, modelType: 'child', modelId: child.id }
+        });
+        child.approvalStatus = approval ? approval.approvalStatus : null;
+      }
+    }
+
+    // Calculate total items for this page
+    const pageItemCount = adults.length + children.length;
+    const loadedSoFar = (currentPage - 1) * itemsPerPage + pageItemCount;
+    const hasMore = loadedSoFar < totalItems && pageItemCount > 0;
+
+    console.log('API Pagination Debug:', {
+      currentPage,
+      itemsPerPage,
+      pageItemCount,
+      totalItems,
+      loadedSoFar,
+      hasMore,
+      totalAdults,
+      totalChildren
+    });
+
+    // Return JSON response
+    res.json({
+      success: true,
+      data: {
+        adults,
+        children,
+        pagination: {
+          currentPage,
+          itemsPerPage,
+          hasMore: hasMore,
+          totalItems: totalItems,
+          loadedItems: loadedSoFar
+        }
+      }
+    });
+
+  } catch (error) {
+    console.error('Error loading more models:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to load more models'
+    });
+  }
 });
 
 // Redirect /admin/dashboard to /admin/models for admin dashboard entry point
@@ -979,7 +1287,13 @@ router.post('/admin/models/update', requireAdmin, async (req, res) => {
         }
       }
       if (weight !== undefined) child.childWeight = weight;
-      if (size) child.childSize = size;
+      if (height !== undefined) child.childHeight = height;
+      
+      // Auto-update sizes if weight or height changed
+      if (weight !== undefined || height !== undefined) {
+        await updateChildSizes(child.id, child.childWeight, child.childHeight);
+      }
+      
       // Per-user fields
       const userFields = {};
       if (phone !== undefined) userFields.parentPhone = phone;
@@ -1001,6 +1315,24 @@ router.post('/admin/models/update', requireAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error in /admin/models/update:', err);
     return res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Calculate sizes endpoint for admin (for real-time size preview)
+router.post('/admin/models/calculate-sizes', requireAdmin, async (req, res) => {
+  try {
+    const { weight, height } = req.body;
+    
+    if (!weight || !height) {
+      return res.status(400).json({ error: 'Weight and height are required' });
+    }
+    
+    const sizes = require('../utils/sizeCalculator').calculateChildSizes(weight, height);
+    
+    res.json({ sizes });
+  } catch (error) {
+    console.error('Error calculating sizes:', error);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 
@@ -1342,12 +1674,30 @@ router.get('/client/dashboard', requireClient, async (req, res) => {
     }
     if (size) {
       adultWhere.size = size;
-      childWhere.childSize = size;
     }
     
     // Fetch all adults and children
-    const adults = await AdultModel.findAll({ where: adultWhere });
-    const children = await ChildModel.findAll({ where: childWhere });
+    let adults = await AdultModel.findAll({ where: adultWhere });
+    
+    let children = [];
+    if (size) {
+      // For size filtering, find children that have this size in their ChildSizes
+      const childIds = await getChildrenBySize(size);
+      if (childIds.length > 0) {
+        childWhere.id = { [require('sequelize').Op.in]: childIds };
+      } else {
+        // No children match this size, return empty array
+        childWhere.id = -1; // This will match no records
+      }
+    }
+    children = await ChildModel.findAll({ 
+      where: childWhere,
+      include: [{
+        model: require('../models').ChildSize,
+        as: 'sizes',
+        required: false
+      }]
+    });
     
     // Fetch and merge user-level fields for each adult
     for (const adult of adults) {

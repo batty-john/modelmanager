@@ -7,8 +7,27 @@ const Shoot = require('./Shoot');
 const ModelApproval = require('./ModelApproval');
 const ChildModel = require('./ChildModel');
 const AdultModel = require('./AdultModel');
+const ChildSize = require('./ChildSize');
 
-// Define associations
+// Create models object for associations
+const models = {
+  User,
+  Client,
+  Shoot,
+  ModelApproval,
+  ChildModel,
+  AdultModel,
+  ChildSize
+};
+
+// Set up associations if they exist
+Object.keys(models).forEach(modelName => {
+  if (models[modelName].associate) {
+    models[modelName].associate(models);
+  }
+});
+
+// Define existing associations
 Client.hasMany(Shoot, {
   foreignKey: 'clientId',
   as: 'shoots'
@@ -42,5 +61,6 @@ module.exports = {
   Shoot,
   ModelApproval,
   ChildModel,
-  AdultModel
+  AdultModel,
+  ChildSize
 }; 

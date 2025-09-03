@@ -33,6 +33,7 @@ const ChildModel = sequelize.define('ChildModel', {
   childSize: {
     type: DataTypes.STRING,
     allowNull: true,
+    comment: 'Primary size for backward compatibility - will be synced with primary ChildSize'
   },
   userId: {
     type: DataTypes.INTEGER,
@@ -41,5 +42,13 @@ const ChildModel = sequelize.define('ChildModel', {
 }, {
   timestamps: true,
 });
+
+// Define associations
+ChildModel.associate = function(models) {
+  ChildModel.hasMany(models.ChildSize, {
+    foreignKey: 'childId',
+    as: 'sizes'
+  });
+};
 
 module.exports = ChildModel; 

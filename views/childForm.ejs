@@ -12,7 +12,7 @@
   <div class="max-w-3xl mx-auto p-12">
     <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
       <div class="flex justify-center mb-6">
-        <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" onerror="this.onerror=null;this.src='/public/logo.jpg';">
+        <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" loading="lazy" onerror="this.onerror=null;this.src='/public/logo.jpg';">
       </div>
       <h1 class="text-2xl font-bold mb-6 text-center"><%= editing ? 'Edit Child' : 'Add Child' %></h1>
       <% if (error) { %>
@@ -22,7 +22,7 @@
         <div>
           <label for="childPhoto" class="block text-sm font-medium text-gray-700">Child's Photo</label>
           <% if (editing && child && child.photo) { %>
-            <img src="<%= child.photo %>" alt="Child Photo" class="w-24 h-24 rounded-full object-cover mb-2">
+            <img src="<%= child.photo %>" alt="Child Photo" class="w-24 h-24 rounded-full object-cover mb-2" loading="lazy">
           <% } %>
           <input type="file" id="childPhoto" name="childPhoto" accept="image/*" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-green-400 focus:ring-green-400 py-2 px-4">
         </div>

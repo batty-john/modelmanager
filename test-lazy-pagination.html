@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lazy Pagination Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .model-card {
+            transition: all 0.3s ease;
+        }
+        .model-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .loading-spinner {
+            border: 2px solid #f3f4f6;
+            border-top: 2px solid #10b981;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <h1 class="text-2xl font-bold mb-6">Lazy Pagination Demo</h1>
+
+    <div class="mb-6 bg-white p-4 rounded shadow">
+        <h2 class="text-lg font-semibold mb-4">How Lazy Pagination Works:</h2>
+        <ul class="list-disc list-inside space-y-2 text-gray-700">
+            <li><strong>Initial Load:</strong> Page loads instantly with first 25 models</li>
+            <li><strong>Load More:</strong> Click "Load More" to fetch additional models via AJAX</li>
+            <li><strong>No Page Reload:</strong> New content appends seamlessly without full page refresh</li>
+            <li><strong>Preserves Filters:</strong> All current filters are maintained across pagination</li>
+            <li><strong>Performance:</strong> Dramatically faster than loading all models at once</li>
+        </ul>
+    </div>
+
+    <!-- Mock Models Grid (simulating what you'd see on admin/models) -->
+    <div id="modelsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-6">
+        <!-- Initial models would be loaded here by the server -->
+        <div class="bg-white rounded shadow p-4 model-card">
+            <div class="w-full h-32 bg-gray-200 rounded mb-3 flex items-center justify-center">
+                <span class="text-gray-400 text-2xl">📷</span>
+            </div>
+            <div class="font-bold">John Doe</div>
+            <div class="text-sm text-gray-500">Adult Model</div>
+            <div class="text-xs text-gray-400 mt-2">Loaded on page load</div>
+        </div>
+
+        <div class="bg-white rounded shadow p-4 model-card">
+            <div class="w-full h-32 bg-gray-200 rounded mb-3 flex items-center justify-center">
+                <span class="text-gray-400 text-2xl">👶</span>
+            </div>
+            <div class="font-bold">Jane Smith</div>
+            <div class="text-sm text-gray-500">Child Model</div>
+            <div class="text-xs text-gray-400 mt-2">Loaded on page load</div>
+        </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="flex flex-col items-center space-y-4">
+        <button id="loadMoreBtn" class="bg-green-500 hover:bg-green-600 text-white px-8 py-3 rounded-lg text-lg font-semibold transition-colors">
+            Load More Models
+        </button>
+
+        <div id="loadingSpinner" class="hidden flex items-center space-x-2 text-gray-600">
+            <div class="loading-spinner"></div>
+            <span>Loading more models...</span>
+        </div>
+
+        <div class="text-sm text-gray-500">
+            <span id="modelCount">Showing 2 of 150 models</span>
+            <span class="ml-2 text-blue-600">(Demo - click Load More to simulate)</span>
+        </div>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        let isLoading = false;
+        let hasMorePages = true;
+        let totalModels = 150;
+        let modelsPerPage = 25;
+
+        // Mock data for demonstration
+        const mockModels = [
+            { name: 'Alice Johnson', type: 'Adult', emoji: '📸' },
+            { name: 'Bob Wilson', type: 'Adult', emoji: '👤' },
+            { name: 'Charlie Brown', type: 'Child', emoji: '👶' },
+            { name: 'Diana Prince', type: 'Adult', emoji: '📷' },
+            { name: 'Edward Norton', type: 'Child', emoji: '👶' },
+            { name: 'Fiona Green', type: 'Adult', emoji: '👤' },
+            { name: 'George Lucas', type: 'Child', emoji: '👶' },
+            { name: 'Helen Troy', type: 'Adult', emoji: '📷' },
+        ];
+
+        document.getElementById('loadMoreBtn').addEventListener('click', async function() {
+            if (isLoading || !hasMorePages) return;
+
+            isLoading = true;
+            const loadMoreBtn = document.getElementById('loadMoreBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            // Show loading state
+            loadMoreBtn.classList.add('hidden');
+            loadingSpinner.classList.remove('hidden');
+
+            try {
+                // Simulate API call delay
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                currentPage++;
+                const newModels = generateMockModels();
+
+                // Append new models to the grid
+                const grid = document.getElementById('modelsGrid');
+                newModels.forEach(model => {
+                    const modelHtml = `
+                        <div class="bg-white rounded shadow p-4 model-card">
+                            <div class="w-full h-32 bg-gray-200 rounded mb-3 flex items-center justify-center">
+                                <span class="text-gray-400 text-2xl">${model.emoji}</span>
+                            </div>
+                            <div class="font-bold">${model.name}</div>
+                            <div class="text-sm text-gray-500">${model.type} Model</div>
+                            <div class="text-xs text-green-600 mt-2">✓ Loaded via AJAX (Page ${currentPage})</div>
+                        </div>
+                    `;
+                    grid.insertAdjacentHTML('beforeend', modelHtml);
+                });
+
+                // Update count
+                const currentCount = document.querySelectorAll('#modelsGrid > div').length;
+                document.getElementById('modelCount').textContent = `Showing ${currentCount} of ${totalModels} models`;
+
+                // Check if we have more pages
+                if (currentCount >= totalModels) {
+                    hasMorePages = false;
+                    loadMoreBtn.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Error loading more models:', error);
+                alert('Error loading more models. Please try again.');
+            } finally {
+                isLoading = false;
+                loadMoreBtn.classList.remove('hidden');
+                loadingSpinner.classList.add('hidden');
+            }
+        });
+
+        function generateMockModels() {
+            const models = [];
+            for (let i = 0; i < modelsPerPage && models.length < totalModels; i++) {
+                const modelIndex = Math.floor(Math.random() * mockModels.length);
+                models.push({
+                    ...mockModels[modelIndex],
+                    name: `${mockModels[modelIndex].name} ${i + 1}`
+                });
+            }
+            return models;
+        }
+
+        // Auto-update demo info
+        setInterval(() => {
+            const currentCount = document.querySelectorAll('#modelsGrid > div').length;
+            document.getElementById('modelCount').innerHTML = `
+                Showing ${currentCount} of ${totalModels} models
+                <span class="text-blue-600">(Demo - ${hasMorePages ? 'More available' : 'All loaded'})</span>
+            `;
+        }, 1000);
+    </script>
+</body>
+</html>

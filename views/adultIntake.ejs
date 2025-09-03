@@ -48,7 +48,7 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
   <div class="max-w-3xl mx-auto p-12 bg-white rounded shadow">
     <div class="flex justify-center mb-8">
-      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" onerror="this.onerror=null;this.src='/public/logo.jpg';">
+      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" loading="lazy" onerror="this.onerror=null;this.src='/public/logo.jpg';">
     </div>
     <h1 class="text-2xl font-bold mb-6 text-center">Adult Model Intake Form</h1>
     <% if (errors && errors.length) { %>
@@ -74,7 +74,7 @@
               </label>
               <div class="profile-pic-container mx-auto">
                 <% if (adult.photo) { %>
-                  <img src="<%= adult.photo %>" alt="Adult Photo" class="profile-pic" id="adultPhotoPreview<%= index %>">
+                  <img src="<%= adult.photo %>" alt="Adult Photo" class="profile-pic" id="adultPhotoPreview<%= index %>" loading="lazy">
                   <input type="file" id="adultPhoto<%= index %>" name="adultPhoto<%= index %>" accept="image/*" class="profile-pic-input <%= errors && errors.some(e => e.field === `photo${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>">
                   <input type="hidden" name="photo<%= index %>" value="<%= adult.photo %>">
                   <% if (errors && errors.some(e => e.field === `photo${index}`)) { %>

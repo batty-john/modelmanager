@@ -136,14 +136,20 @@
     <div id="modelsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
              <!-- Adult Models -->
        <% adults.forEach(function(adult) { %>
-                 <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card" 
-             data-model-type="adult" 
+                 <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card"
+             data-model-type="adult"
              data-model-id="<%= adult.id %>"
              data-gender="<%= adult.gender %>"
              data-size="<%= adult.size %>"
              data-approval="<%= adult.approvalStatus %>">
          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
-            <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" loading="lazy" />
+            <% if (adult.photo) { %>
+              <img data-src="<%= adult.photo %>" class="w-full h-full object-cover lazy" style="display:block;" loading="lazy" alt="Adult Photo" />
+            <% } else { %>
+              <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                <span class="text-gray-400 text-4xl">👤</span>
+              </div>
+            <% } %>
           </div>
           <div class="p-4 flex flex-col items-center">
             <div class="font-bold text-lg mb-1 text-center"><%= adult.firstName %></div>
@@ -180,20 +186,38 @@
 
              <!-- Child Models -->
        <% children.forEach(function(child) { %>
-                 <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card" 
-             data-model-type="child" 
+                 <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden model-card"
+             data-model-type="child"
              data-model-id="<%= child.id %>"
              data-gender="<%= child.childGender %>"
              data-size="<%= child.childSize %>"
+             data-all-sizes="<% if (child.sizes && child.sizes.length > 0) { %><%= child.sizes.map(s => s.size).join(',') %><% } else { %><%= child.childSize || '' %><% } %>"
              data-approval="<%= child.approvalStatus %>">
          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
-            <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" loading="lazy" />
+            <% if (child.photo) { %>
+              <img data-src="<%= child.photo %>" class="w-full h-full object-cover lazy" style="display:block;" loading="lazy" alt="Child Photo" />
+            <% } else { %>
+              <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+                <span class="text-gray-400 text-4xl">👤</span>
+              </div>
+            <% } %>
           </div>
           <div class="p-4 flex flex-col items-center">
             <div class="font-bold text-lg mb-1 text-center"><%= child.childFirstName %></div>
             <div class="text-xs text-gray-500 mb-2">Child</div>
             <div class="mb-1 text-sm"><span class="font-semibold">Gender:</span> <%= child.childGender %></div>
-            <div class="mb-1 text-sm"><span class="font-semibold">Size:</span> <%= child.childSize %></div>
+            <div class="mb-1 text-sm">
+              <span class="font-semibold">Sizes:</span> 
+              <div class="mt-1">
+                <% if (child.sizes && child.sizes.length > 0) { %>
+                  <% child.sizes.forEach((size, index) => { %>
+                    <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1 mb-1"><%= size.size %></span>
+                  <% }); %>
+                <% } else { %>
+                  <%= child.childSize || 'Not calculated' %>
+                <% } %>
+              </div>
+            </div>
             
             <!-- Approval Buttons -->
             <div class="flex gap-2 mt-3">
@@ -297,9 +321,15 @@
             show = false;
           }
 
-          // Size filter
-          if (size && card.getAttribute('data-size') !== size) {
-            show = false;
+          // Size filter - check both primary size and all sizes
+          if (size) {
+            const primarySize = card.getAttribute('data-size');
+            const allSizes = card.getAttribute('data-all-sizes') || '';
+            const allSizesArray = allSizes.split(',').map(s => s.trim()).filter(s => s);
+            
+            if (primarySize !== size && !allSizesArray.includes(size)) {
+              show = false;
+            }
           }
 
           // Approval filter
@@ -488,6 +518,11 @@
       // Initial filter
       filterModels();
     });
+
+    // Simple Lazy Loading
+    const lazyLoaderScript = document.createElement('script');
+    lazyLoaderScript.src = '/public/simple-lazy-loader.js';
+    document.head.appendChild(lazyLoaderScript);
   </script>
 </body>
 </html> 

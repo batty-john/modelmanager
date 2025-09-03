@@ -48,7 +48,7 @@
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
   <div class="max-w-3xl mx-auto p-12 bg-white rounded shadow">
     <div class="flex justify-center mb-8">
-      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" onerror="this.onerror=null;this.src='/public/logo.jpg';">
+      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" loading="lazy" onerror="this.onerror=null;this.src='/public/logo.jpg';">
     </div>
     <h1 class="text-2xl font-bold mb-6 text-center">Child Model Intake Form</h1>
     <% if (success) { %>
@@ -95,7 +95,7 @@
                   <label class="block text-sm font-medium text-gray-700">Child's Photo (Smiling, straight at camera)</label>
                   <% if (child.photo) { %>
                     <div class="profile-pic-container mx-auto">
-                      <img src="<%= child.photo %>" alt="Child's Photo" class="profile-pic">
+                      <img src="<%= child.photo %>" alt="Child's Photo" class="profile-pic" loading="lazy">
                       <input type="file" id="childPhoto<%= index %>" name="childPhoto<%= index %>" accept="image/*" class="profile-pic-input py-2 px-4">
                     </div>
                   <% } else { %>
@@ -143,7 +143,7 @@
                 <label class="block text-sm font-medium text-gray-700">Child's Photo (Smiling, straight at camera)</label>
                 <% if (children && children.length > 0 && children[0].photo) { %>
                   <div class="profile-pic-container mx-auto">
-                    <img src="<%= children[0].photo %>" alt="Child's Photo" class="profile-pic">
+                    <img src="<%= children[0].photo %>" alt="Child's Photo" class="profile-pic" loading="lazy">
                     <input type="file" id="childPhoto0" name="childPhoto0" accept="image/*" class="profile-pic-input py-2 px-4">
                   </div>
                 <% } else { %>

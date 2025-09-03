@@ -11,7 +11,7 @@
 <body class="bg-gray-100 min-h-screen">
   <div class="max-w-3xl mx-auto p-12">
     <div class="flex justify-center mb-8">
-      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" onerror="this.onerror=null;this.src='/public/logo.jpg';">
+      <img src="/public/logo.jpg" alt="Annie Jean Photography Logo" class="h-28 object-contain" loading="lazy" onerror="this.onerror=null;this.src='/public/logo.jpg';">
     </div>
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-2xl font-bold">Welcome, <%= userEmail %>!</h1>
@@ -27,7 +27,13 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <% children.forEach(child => { %>
           <div class="bg-white rounded shadow p-4 flex flex-col items-center">
-            <img src="<%= imageProcessor.getBestImagePath(child.photo, 'thumbnail') %>" alt="Child Photo" class="w-24 h-24 rounded-full object-cover mb-2">
+            <% if (child.photo) { %>
+              <img data-src="<%= child.photo %>" alt="Child Photo" class="w-24 h-24 rounded-full object-cover mb-2 lazy" loading="lazy">
+            <% } else { %>
+              <div class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-2">
+                <span class="text-gray-400 text-2xl">👤</span>
+              </div>
+            <% } %>
             <div class="font-semibold"><%= child.childFirstName %></div>
             <div class="text-sm text-gray-600 mb-2">DOB: <%= child.childDOB %></div>
             <div class="flex gap-2 mt-2">
@@ -51,7 +57,11 @@
           <% adults.forEach(adult => { %>
             <div class="bg-white rounded shadow p-4 flex flex-col items-center">
               <% if (adult.photo) { %>
-                <img src="<%= imageProcessor.getBestImagePath(adult.photo, 'thumbnail') %>" alt="Adult Photo" class="w-24 h-24 rounded-full object-cover mb-2">
+                <img data-src="<%= adult.photo %>" alt="Adult Photo" class="w-24 h-24 rounded-full object-cover mb-2 lazy" loading="lazy">
+              <% } else { %>
+                <div class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center mb-2">
+                  <span class="text-gray-400 text-2xl">👤</span>
+                </div>
               <% } %>
               <div class="font-semibold"><%= adult.firstName %> <%= adult.lastName %></div>
               <div class="text-sm text-gray-600 mb-2"><%= adult.email %></div>
@@ -61,5 +71,8 @@
       </div>
     <% } %>
   </div>
+
+  <!-- Simple Lazy Loading -->
+  <script src="/public/simple-lazy-loader.js"></script>
 </body>
 </html> 

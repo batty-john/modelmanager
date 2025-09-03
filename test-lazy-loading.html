@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lazy Loading Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-image {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border: 2px solid #e5e7eb;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <h1 class="text-2xl font-bold mb-6">Lazy Loading Test Page</h1>
+
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold mb-4">Working Images:</h2>
+        <div class="flex flex-wrap">
+            <img data-src="/public/logo.jpg" class="test-image lazy" loading="lazy" alt="Logo">
+            <img data-src="https://picsum.photos/200/200?random=1" class="test-image lazy" loading="lazy" alt="Test Image 1">
+            <img data-src="https://picsum.photos/200/200?random=2" class="test-image lazy" loading="lazy" alt="Test Image 2">
+        </div>
+    </div>
+
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold mb-4">Non-existent Images (should not cause infinite loops):</h2>
+        <div class="flex flex-wrap">
+            <img data-src="/public/non-existent-1.jpg" class="test-image lazy" loading="lazy" alt="Non-existent 1">
+            <img data-src="/public/non-existent-2.jpg" class="test-image lazy" loading="lazy" alt="Non-existent 2">
+            <img data-src="https://invalid-domain-that-does-not-exist.com/image.jpg" class="test-image lazy" loading="lazy" alt="Invalid Domain">
+        </div>
+    </div>
+
+    <div class="mb-6">
+        <button onclick="debugLazyLoader()" class="bg-blue-500 text-white px-4 py-2 rounded">Debug Lazy Loader</button>
+        <button onclick="reloadPage()" class="bg-green-500 text-white px-4 py-2 rounded ml-2">Reload Page</button>
+    </div>
+
+    <div class="mb-6">
+        <h2 class="text-lg font-semibold mb-4">Status:</h2>
+        <div id="status" class="bg-white p-4 rounded shadow">
+            <p>Page loaded. Scroll down to test lazy loading.</p>
+        </div>
+    </div>
+
+    <!-- Add more content to test scrolling -->
+    <div class="space-y-4">
+        <% for(let i = 0; i < 20; i++) { %>
+            <div class="bg-white p-4 rounded shadow">
+                <h3 class="font-semibold">Content Block <%= i + 1 %></h3>
+                <p class="text-gray-600">This is some content to create scroll space for testing lazy loading.</p>
+            </div>
+        <% } %>
+    </div>
+
+    <!-- Simple Lazy Loading -->
+    <script src="/public/simple-lazy-loader.js"></script>
+
+    <script>
+        function debugLazyLoader() {
+            if (window.simpleLazyLoader) {
+                console.log('Simple lazy loader is active');
+            } else {
+                console.log('Simple lazy loader not found');
+            }
+
+            // Count images
+            const totalImages = document.querySelectorAll('img[data-src]').length;
+            const loadedImages = document.querySelectorAll('img[data-src]:not([src])').length;
+            const processedImages = document.querySelectorAll('img:not([data-src])').length;
+
+            console.log(`Total images: ${totalImages}`);
+            console.log(`Loaded images: ${loadedImages}`);
+            console.log(`Processed images: ${processedImages}`);
+
+            document.getElementById('status').innerHTML = `
+                <p><strong>Total images:</strong> ${totalImages}</p>
+                <p><strong>Loaded images:</strong> ${loadedImages}</p>
+                <p><strong>Processed images:</strong> ${processedImages}</p>
+                <p><strong>Last check:</strong> ${new Date().toLocaleTimeString()}</p>
+            `;
+        }
+
+        function reloadPage() {
+            window.location.reload();
+        }
+
+        // Auto-update status every 5 seconds
+        setInterval(debugLazyLoader, 5000);
+    </script>
+</body>
+</html>

@@ -220,7 +220,7 @@ app.use((req, res, next) => {
 async function connectToDatabase(retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
-      await sequelize.sync({ alter: true });
+      await sequelize.sync();
       console.log('✅ Database synced successfully');
       return;
     } catch (err) {
