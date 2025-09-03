@@ -506,6 +506,17 @@
                 </select>
               </div>
             <% } %>
+            <% if (selectedShootId) { %>
+              <div class="mt-2 text-sm font-semibold approval-status-display">
+                <% if (adult.approvalStatus === 1) { %>
+                  <span class="text-green-600">✓ Approved</span>
+                <% } else if (adult.approvalStatus === 0) { %>
+                  <span class="text-red-600">✗ Disapproved</span>
+                <% } else { %>
+                  <span class="text-blue-600">— Pending</span>
+                <% } %>
+              </div>
+            <% } %>
             <div class="flex gap-2 mt-2">
               <button class="btn-red-outline px-3 py-1 rounded delete-btn text-sm" data-model-type="adult" data-model-id="<%= adult.id %>" data-model-name="<%= adult.firstName %> <%= adult.lastName %>">Delete</button>
             </div>
@@ -554,6 +565,17 @@
                   <option value="1" <%= child.approvalStatus === 1 ? 'selected' : '' %>>Approved</option>
                   <option value="0" <%= child.approvalStatus === 0 ? 'selected' : '' %>>Disapproved</option>
                 </select>
+              </div>
+            <% } %>
+            <% if (selectedShootId) { %>
+              <div class="mt-2 text-sm font-semibold approval-status-display">
+                <% if (child.approvalStatus === 1) { %>
+                  <span class="text-green-600">✓ Approved</span>
+                <% } else if (child.approvalStatus === 0) { %>
+                  <span class="text-red-600">✗ Disapproved</span>
+                <% } else { %>
+                  <span class="text-blue-600">— Pending</span>
+                <% } %>
               </div>
             <% } %>
             <div class="flex gap-2 mt-2">
@@ -1033,13 +1055,18 @@
         : `<div class="w-full h-full bg-gray-200 flex items-center justify-center"><span class="text-gray-400 text-4xl">👤</span></div>`;
 
       const approvalStatus = adult.approvalStatus;
-      const approvalHtml = '<%= selectedShootId %>' ? `
+      const isShootSelected = !!(document.getElementById('shootSelect') && document.getElementById('shootSelect').value);
+      const approvalHtml = isShootSelected ? `
         <div class="mb-1"><span class="font-semibold">Approval:</span>
           <select class="input-gold w-24 approval-input" data-model-type="adult" data-model-id="${adult.id}">
             <option value="">Pending</option>
             <option value="1" ${approvalStatus === 1 ? 'selected' : ''}>Approved</option>
             <option value="0" ${approvalStatus === 0 ? 'selected' : ''}>Disapproved</option>
           </select>
+        </div>` : '';
+      const statusHtml = isShootSelected ? `
+        <div class="mt-2 text-sm font-semibold approval-status-display">
+          ${approvalStatus === 1 ? '<span class="text-green-600">✓ Approved</span>' : (approvalStatus === 0 ? '<span class="text-red-600">✗ Disapproved</span>' : '<span class="text-blue-600">— Pending</span>')}
         </div>` : '';
 
       return `
@@ -1055,6 +1082,7 @@
             <div class="mb-1"><span class="font-semibold">Brands:</span> <span class="brands-value">${adult.brandsWorkedWith || ''}</span></div>
             <div class="mb-1"><span class="font-semibold">Last Updated:</span> ${adult.updatedAt ? new Date(adult.updatedAt).toLocaleDateString() : ''}</div>
             ${approvalHtml}
+            ${statusHtml}
             <div class="flex gap-2 mt-2">
               <button class="btn-red-outline px-3 py-1 rounded delete-btn text-sm" data-model-type="adult" data-model-id="${adult.id}" data-model-name="${adult.firstName} ${adult.lastName}">Delete</button>
             </div>
@@ -1074,13 +1102,18 @@
         : '<span class="text-gray-500 text-xs">Auto-assigned on weight update</span>';
 
       const approvalStatus = child.approvalStatus;
-      const approvalHtml = '<%= selectedShootId %>' ? `
+      const isShootSelected = !!(document.getElementById('shootSelect') && document.getElementById('shootSelect').value);
+      const approvalHtml = isShootSelected ? `
         <div class="mb-1"><span class="font-semibold">Approval:</span>
           <select class="input-gold w-24 approval-input" data-model-type="child" data-model-id="${child.id}">
             <option value="">Pending</option>
             <option value="1" ${approvalStatus === 1 ? 'selected' : ''}>Approved</option>
             <option value="0" ${approvalStatus === 0 ? 'selected' : ''}>Disapproved</option>
           </select>
+        </div>` : '';
+      const statusHtml = isShootSelected ? `
+        <div class="mt-2 text-sm font-semibold approval-status-display">
+          ${approvalStatus === 1 ? '<span class="text-green-600">✓ Approved</span>' : (approvalStatus === 0 ? '<span class="text-red-600">✗ Disapproved</span>' : '<span class="text-blue-600">— Pending</span>')}
         </div>` : '';
 
       return `
@@ -1101,6 +1134,7 @@
             <div class="mb-1"><span class="font-semibold">Brands:</span> <span class="brands-value">${child.brandsWorkedWith || ''}</span></div>
             <div class="mb-1"><span class="font-semibold">Last Updated:</span> ${child.updatedAt ? new Date(child.updatedAt).toLocaleDateString() : ''}</div>
             ${approvalHtml}
+            ${statusHtml}
             <div class="flex gap-2 mt-2">
               <button class="btn-red-outline px-3 py-1 rounded delete-btn text-sm" data-model-type="child" data-model-id="${child.id}" data-model-name="${child.childFirstName} ${child.childLastName || ''}">Delete</button>
             </div>
@@ -1585,9 +1619,39 @@
         approvalFilterSection.style.display = 'block';
         showApprovalColumn();
         reloadApprovalStatus(shootId); // Reload approval status for the new shoot
+        // Inject approval UI into existing cards (card view only)
+        if (window.isCardView) {
+          document.querySelectorAll('#modelsGrid > div.bg-white').forEach(card => {
+            if (!card.querySelector('.approval-input')) {
+              const modelType = card.getAttribute('data-model-type');
+              const modelId = card.getAttribute('data-model-id');
+              const container = card.querySelector('.p-4');
+              if (!container) return;
+              const approvalWrapper = document.createElement('div');
+              approvalWrapper.className = 'mb-1';
+              approvalWrapper.innerHTML = `<span class="font-semibold">Approval:</span>
+                <select class="input-gold w-24 approval-input" data-model-type="${modelType}" data-model-id="${modelId}">
+                  <option value="">Pending</option>
+                  <option value="1">Approved</option>
+                  <option value="0">Disapproved</option>
+                </select>`;
+              container.appendChild(approvalWrapper);
+              // Status display below
+              const statusDiv = document.createElement('div');
+              statusDiv.className = 'mt-2 text-sm font-semibold approval-status-display';
+              statusDiv.innerHTML = '<span class="text-blue-600">— Pending</span>';
+              container.appendChild(statusDiv);
+            }
+          });
+        }
       } else {
         approvalFilterSection.style.display = 'none';
         hideApprovalColumn();
+        // Remove approval UI from cards (card view only)
+        if (window.isCardView) {
+          document.querySelectorAll('#modelsGrid .approval-input').forEach(sel => sel.closest('div').remove());
+          document.querySelectorAll('#modelsGrid .approval-status-display').forEach(div => div.remove());
+        }
       }
       updateUrl();
     });
@@ -1818,6 +1882,24 @@
         
         if (response.ok) {
           console.log('Approval status updated successfully');
+          const normalized = approvalStatus === '' ? null : parseInt(approvalStatus);
+          // Update card view icon text/color if present
+          const card = document.querySelector(`div[data-model-type="${modelType}"][data-model-id="${modelId}"]`);
+          if (card) {
+            const span = card.querySelector('.approval-status-display span');
+            if (span) {
+              if (normalized === 1) {
+                span.textContent = '✓ Approved';
+                span.className = 'text-green-600';
+              } else if (normalized === 0) {
+                span.textContent = '✗ Disapproved';
+                span.className = 'text-red-600';
+              } else {
+                span.textContent = '— Pending';
+                span.className = 'text-blue-600';
+              }
+            }
+          }
         } else {
           console.error('Error updating approval status');
         }
@@ -1846,7 +1928,22 @@
           if (card) {
             const approvalInput = card.querySelector('.approval-input');
             if (approvalInput) {
-              approvalInput.value = approval.approvalStatus === null ? '' : approval.approvalStatus;
+              const statusVal = approval.approvalStatus === null ? '' : approval.approvalStatus;
+              approvalInput.value = statusVal;
+              const span = card.querySelector('.approval-status-display span');
+              if (span) {
+                const normalized = statusVal === '' ? null : parseInt(statusVal);
+                if (normalized === 1) {
+                  span.textContent = '✓ Approved';
+                  span.className = 'text-green-600';
+                } else if (normalized === 0) {
+                  span.textContent = '✗ Disapproved';
+                  span.className = 'text-red-600';
+                } else {
+                  span.textContent = '— Pending';
+                  span.className = 'text-blue-600';
+                }
+              }
             }
           }
         });
