@@ -114,6 +114,15 @@ class EnhancedFormHandler {
             img.src = data.thumbnail;
           }
 
+          // Clear the original file input so it doesn't get re-submitted with the full form
+          input.value = '';
+          // Mark as satisfied to relax client-side required validation
+          input.setAttribute('data-uploaded', 'true');
+          // If it was required, keep UX smooth by not blocking submit
+          if (input.hasAttribute('required')) {
+            input.removeAttribute('required');
+          }
+
           indicator.textContent = 'Uploaded';
           setTimeout(() => indicator.remove(), 1500);
         } catch (err) {
@@ -157,6 +166,25 @@ class EnhancedFormHandler {
   }
 
   async attemptAjaxSubmission(form) {
+    // Temporarily disable file inputs that already have uploaded values or when deferring
+    const disabledInputs = [];
+    const defer = form.querySelector('#deferPhotos');
+    const deferChecked = !!(defer && defer.checked);
+    form.querySelectorAll('input[type="file"]').forEach(fi => {
+      const name = fi.name;
+      const idx = name.replace(/^[^0-9]*/, '');
+      const isAdult = name.startsWith('adultPhoto');
+      const hiddenName = isAdult ? `photo${idx}` : `existingPhoto${idx}`;
+      const hidden = form.querySelector(`input[type="hidden"][name="${hiddenName}"]`);
+      const hasUploaded = hidden && hidden.value;
+      if (deferChecked || hasUploaded || fi.getAttribute('data-uploaded') === 'true') {
+        if (!fi.disabled) {
+          fi.disabled = true;
+          disabledInputs.push(fi);
+        }
+      }
+    });
+
     const formData = new FormData(form);
     
     // Create timeout promise
@@ -193,6 +221,10 @@ class EnhancedFormHandler {
         throw new Error('The request is taking longer than expected. Please check your connection and try again.');
       }
       throw error;
+    }
+    finally {
+      // Re-enable any temporarily disabled inputs
+      disabledInputs.forEach(fi => { fi.disabled = false; });
     }
   }
 
@@ -241,6 +273,20 @@ class EnhancedFormHandler {
     // Check required fields
     const requiredFields = form.querySelectorAll('[required]');
     requiredFields.forEach(field => {
+      // Special handling for file inputs: allow hidden uploaded value or deferral
+      if (field.type === 'file') {
+        const name = field.name || '';
+        const idx = name.replace(/^[^0-9]*/, '');
+        const isAdult = name.startsWith('adultPhoto');
+        const hiddenName = isAdult ? `photo${idx}` : `existingPhoto${idx}`;
+        const hidden = form.querySelector(`input[type="hidden"][name="${hiddenName}"]`);
+        const defer = form.querySelector('#deferPhotos');
+        const deferChecked = !!(defer && defer.checked);
+        if ((hidden && hidden.value) || deferChecked || field.getAttribute('data-uploaded') === 'true') {
+          return; // Treat as satisfied
+        }
+      }
+
       if (!field.value.trim()) {
         const label = form.querySelector(`label[for="${field.id}"]`);
         const fieldName = label ? label.textContent : field.name;
