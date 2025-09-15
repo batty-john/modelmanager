@@ -11,6 +11,7 @@ class ImageProcessor {
 
   async ensureDirectories() {
     try {
+      await fs.mkdir(this.uploadsDir, { recursive: true });
       await fs.mkdir(this.thumbnailsDir, { recursive: true });
       await fs.mkdir(this.compressedDir, { recursive: true });
     } catch (error) {

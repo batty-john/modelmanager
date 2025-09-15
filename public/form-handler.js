@@ -58,10 +58,8 @@ class EnhancedFormHandler {
   }
 
   setupAsyncPhotoUploads() {
-    // Attach to known photo input naming patterns: childPhoto{index}, adultPhoto{index}
-    const photoInputs = document.querySelectorAll('input[type="file"][name^="childPhoto"], input[type="file"][name^="adultPhoto"]');
-    photoInputs.forEach(input => {
-      input.addEventListener('change', async (e) => {
+    // Use delegation to also catch dynamically added inputs
+    const onChange = async (input) => {
         const file = input.files && input.files[0];
         if (!file) return;
 
@@ -130,7 +128,19 @@ class EnhancedFormHandler {
           indicator.textContent = 'Upload failed. You can submit without photo and add later.';
           setTimeout(() => indicator.remove(), 4000);
         }
-      });
+      };
+
+    // Existing inputs
+    document.querySelectorAll('input[type="file"][name^="childPhoto"], input[type="file"][name^="adultPhoto"]').forEach(input => {
+      input.addEventListener('change', (e) => onChange(input));
+    });
+
+    // Newly added inputs
+    document.addEventListener('change', (e) => {
+      const target = e.target;
+      if (target && target.matches && target.matches('input[type="file"][name^="childPhoto"], input[type="file"][name^="adultPhoto"]')) {
+        onChange(target);
+      }
     });
   }
 
