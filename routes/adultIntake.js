@@ -348,6 +348,7 @@ router.post('/', uploadAny, handleMulterError, async (req, res) => {
     const facebookProfileLink = req.body.facebookProfileLink;
     const instagramProfileLink = req.body.instagramProfileLink;
     const mainPhoto = req.body[`photo0`] || (photoFiles[`adultPhoto0`] ? '/public/uploads/' + photoFiles[`adultPhoto0`].filename : '');
+    const deferPhotos = req.body.deferPhotos === 'true';
     let errors = [];
     for (const idx of adultIndices) {
       const firstName = req.body[`firstName${idx}`];
@@ -365,7 +366,7 @@ router.post('/', uploadAny, handleMulterError, async (req, res) => {
     }
     if (!preferredContact) errors.push({ field: 'preferredContact', msg: 'Preferred contact method is required.' });
     if (preferredContact === 'Facebook' && !facebookProfileLink) errors.push({ field: 'facebookProfileLink', msg: 'Facebook profile link is required.' });
-    if (!mainPhoto) errors.push({ field: 'photo0', msg: 'A photo is required.' });
+    if (!deferPhotos && !mainPhoto) errors.push({ field: 'photo0', msg: 'A photo is required.' });
     console.log('ADULT INTAKE ERRORS ARRAY:', errors);
     if (errors.length) {
       console.log('ADULTS ARRAY SENT TO TEMPLATE:', adultIndices.map(i => ({

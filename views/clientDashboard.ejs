@@ -142,6 +142,18 @@
       </div>
     </div>
 
+    <!-- Pagination Controls -->
+    <div class="flex items-center justify-between mb-4" id="paginationControls">
+      <button id="prevPageBtn" class="btn-gold-outline px-4 py-2 rounded" <%= pagination && pagination.hasPrevPage ? '' : 'disabled' %>>Prev</button>
+      <div class="text-sm text-gray-600">
+        Page <span id="pageNumber"><%= (pagination && pagination.currentPage) || 1 %></span>
+        of <span id="pageCount"><%= (pagination && pagination.totalPages) || 1 %></span>
+        • Showing <span id="itemCount"><%= (adults.length + children.length) %></span>
+        of <span id="totalCount"><%= (pagination && pagination.totalItems) || (adults.length + children.length) %></span>
+      </div>
+      <button id="nextPageBtn" class="btn-gold-gradient px-4 py-2 rounded" <%= pagination && pagination.hasNextPage ? '' : 'disabled' %>>Next</button>
+    </div>
+
     <!-- Models Grid -->
     <div id="modelsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
              <!-- Adult Models -->
@@ -299,6 +311,23 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function() {
+      // Pagination handlers
+      const prevBtn = document.getElementById('prevPageBtn');
+      const nextBtn = document.getElementById('nextPageBtn');
+      if (prevBtn) prevBtn.addEventListener('click', () => navigatePage(-1));
+      if (nextBtn) nextBtn.addEventListener('click', () => navigatePage(1));
+
+      function navigatePage(delta) {
+        const url = new URL(window.location.href);
+        const pageNumberEl = document.getElementById('pageNumber');
+        const currentFromDom = pageNumberEl ? parseInt(pageNumberEl.textContent || '1') : 1;
+        const current = parseInt(url.searchParams.get('page') || String(currentFromDom));
+        const target = Math.max(1, current + delta);
+        url.searchParams.set('page', String(target));
+        url.searchParams.set('limit', '25');
+        window.location.href = url.toString();
+      }
+
       const shootSelect = document.getElementById('shootSelect');
       const filterGender = document.getElementById('filterGender');
       const filterSize = document.getElementById('filterSize');
@@ -415,20 +444,22 @@
       // Event listeners
       shootSelect.addEventListener('change', function() {
         const shootId = this.value;
-        const currentUrl = new URL(window.location);
-        currentUrl.searchParams.set('shootId', shootId);
-        window.location.href = currentUrl.toString();
+        const url = new URL(window.location);
+        url.searchParams.set('shootId', shootId);
+        url.searchParams.set('page', '1');
+        url.searchParams.set('limit', '25');
+        window.location.href = url.toString();
       });
 
-      filterGender.addEventListener('change', filterModels);
-      filterSize.addEventListener('change', filterModels);
-      filterApproval.addEventListener('change', filterModels);
+      filterGender.addEventListener('change', updateUrlFromFiltersAndReload);
+      filterSize.addEventListener('change', updateUrlFromFiltersAndReload);
+      filterApproval.addEventListener('change', updateUrlFromFiltersAndReload);
 
       resetFilters.addEventListener('click', function() {
         filterGender.value = '';
         filterSize.value = '';
         filterApproval.value = '';
-        filterModels();
+        updateUrlFromFiltersAndReload();
       });
 
       // Approval button clicks
@@ -525,8 +556,32 @@
       if (urlParams.get('size')) filterSize.value = urlParams.get('size');
       if (urlParams.get('approvalStatus')) filterApproval.value = urlParams.get('approvalStatus');
 
-      // Initial filter
-      filterModels();
+      // Update pagination control visibility (hide if single page)
+      updatePaginationControlsUI();
+
+      function updatePaginationControlsUI() {
+        const controls = document.getElementById('paginationControls');
+        const pageCountEl = document.getElementById('pageCount');
+        if (controls && pageCountEl) {
+          const totalPages = parseInt(pageCountEl.textContent || '1');
+          controls.style.display = totalPages <= 1 ? 'none' : 'flex';
+        }
+      }
+
+      function updateUrlFromFiltersAndReload() {
+        const url = new URL(window.location);
+        const gender = filterGender.value;
+        const size = filterSize.value;
+        const approval = filterApproval.value;
+        // Set or clear params
+        if (gender) url.searchParams.set('gender', gender); else url.searchParams.delete('gender');
+        if (size) url.searchParams.set('size', size); else url.searchParams.delete('size');
+        if (approval) url.searchParams.set('approvalStatus', approval); else url.searchParams.delete('approvalStatus');
+        // Reset pagination
+        url.searchParams.set('page', '1');
+        url.searchParams.set('limit', '25');
+        window.location.href = url.toString();
+      }
     });
 
     // Simple Lazy Loading

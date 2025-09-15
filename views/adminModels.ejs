@@ -48,6 +48,7 @@
             <% }); %>
           </select>
           <button type="button" id="createShootBtn" class="btn-gold-gradient px-3 py-2 rounded text-sm">New Shoot</button>
+          <button type="button" id="impersonateClientBtn" class="btn-blue-outline px-3 py-2 rounded text-sm" title="View as client">Log in as client</button>
         </div>
         
         <button id="toggleView" class="btn-gold-outline px-6 py-2 rounded">Switch to <%= viewMode === 'spreadsheet' ? 'Card' : 'Spreadsheet' %> View</button>
@@ -71,8 +72,8 @@
       </div>
       <div>
         <label class="block text-xs font-semibold text-gray-700">Age</label>
-        <input type="text" name="minAge" id="filterMinAge" placeholder="Min" class="input-gold w-16"> -
-        <input type="text" name="maxAge" id="filterMaxAge" placeholder="Max" class="input-gold w-16">
+        <input type="text" name="minAge" id="filterMinAge" placeholder="Min" class="input-gold w-16" value="<%= filters.minAge || '' %>"> -
+        <input type="text" name="maxAge" id="filterMaxAge" placeholder="Max" class="input-gold w-16" value="<%= filters.maxAge || '' %>">
       </div>
       <div>
         <label class="block text-xs font-semibold text-gray-700">Weight</label>
@@ -302,6 +303,36 @@
         row.style.display = show ? '' : 'none';
       });
     }
+
+    // Admin: Log in as client
+    document.addEventListener('click', async function(e) {
+      if (e.target && e.target.id === 'impersonateClientBtn') {
+        const clientSelect = document.getElementById('clientSelect');
+        const shootSelect = document.getElementById('shootSelect');
+        const clientId = clientSelect ? clientSelect.value : '';
+        const shootId = shootSelect ? shootSelect.value : '';
+        if (!clientId) {
+          alert('Please select a client first.');
+          return;
+        }
+        try {
+          const resp = await fetch('/admin/impersonate-client', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ clientId, shootId: shootId || undefined })
+          });
+          const data = await resp.json();
+          if (resp.ok && data.success) {
+            window.location.href = data.redirect || '/client/dashboard';
+          } else {
+            alert(data.error || 'Failed to log in as client');
+          }
+        } catch (err) {
+          console.error('Impersonation error:', err);
+          alert('Error logging in as client');
+        }
+      }
+    });
     // Filter listeners will be attached in the later script tag to avoid duplicates
     </script>
     <!-- Spreadsheet/Table View -->
@@ -328,7 +359,7 @@
             <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="preferredContact">Preferred Contact <span class="sort-arrow"></span></th>
             <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="socialLink">Social Link <span class="sort-arrow"></span></th>
             <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="updatedAt">Last Updated <span class="sort-arrow"></span></th>
-            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700" id="approvalHeader" style="display: <%= selectedShootId ? 'table-cell' : 'none' %>;">Approval Status</th>
+            <th class="px-4 py-2 text-left text-xs font-bold text-gray-700 sortable" data-sort="approval" id="approvalHeader" style="display: <%= selectedShootId ? 'table-cell' : 'none' %>;">Approval Status <span class="sort-arrow"></span></th>
             <th class="px-4 py-2 text-left text-xs font-bold text-gray-700">Actions</th>
           </tr>
         </thead>
@@ -588,14 +619,26 @@
     </div>
     <% } %>
 
+    <!-- Pagination Controls -->
+    <div class="flex items-center justify-between mt-6" id="paginationControls">
+      <button id="prevPageBtn" class="btn-gold-outline px-4 py-2 rounded" <%= pagination.hasPrevPage ? '' : 'disabled' %>>Prev</button>
+      <div class="text-sm text-gray-600">
+        Page <span id="pageNumber"><%= pagination.currentPage %></span>
+        of <span id="pageCount"><%= pagination.totalPages %></span>
+        • Showing <span id="itemCount"><%= adults.length + children.length %></span>
+        of <span id="totalCount"><%= pagination.totalItems %></span>
+      </div>
+      <button id="nextPageBtn" class="btn-gold-gradient px-4 py-2 rounded" <%= pagination.hasNextPage ? '' : 'disabled' %>>Next</button>
+    </div>
+
     <!-- Loading removed: all models are rendered server-side on initial load -->
   </div>
 
   <!-- Infinite Scroll JavaScript -->
   <script>
     let currentPage = <%= pagination.currentPage %>;
-    const itemsPerPage = <%= pagination.itemsPerPage %>;
-    const totalPages = <%= pagination.totalPages %>;
+    let itemsPerPage = <%= pagination.itemsPerPage %>;
+    let totalPages = <%= pagination.totalPages %>;
     let totalItems = <%= pagination.totalItems %>;
     let isLoading = false;
     let hasMorePages = <%= pagination.hasNextPage %>;
@@ -608,15 +651,19 @@
     });
     let currentItemCount = <%= adults.length + children.length %>;
     let autoLoadInterval;
+    const enableInfiniteScroll = false;
 
     // Store current filter state
-    const currentFilters = {
+    let currentFilters = {
       gender: '<%= filters.gender || '' %>',
       size: '<%= filters.size || '' %>',
       modelType: '<%= filters.modelType || '' %>',
       clientId: '<%= selectedClientId || '' %>',
       shootId: '<%= selectedShootId || '' %>',
-      approvalStatus: '<%= filters.approvalStatus || '' %>'
+      approvalStatus: '<%= filters.approvalStatus || '' %>',
+      minAge: '<%= filters.minAge || '' %>',
+      maxAge: '<%= filters.maxAge || '' %>',
+      sort: '<%= sort || '' %>'
     };
 
     // Load all remaining models function
@@ -645,7 +692,7 @@
         loadingSpinner.classList.remove('hidden');
         loadingSpinner.innerHTML = `
           <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          <span class="text-lg font-semibold text-blue-600">Loading all remaining models...</span>
+          <span class="text-lg font-semibold text-blue-600">Loading more models...</span>
         `;
         console.log('✅ Loading spinner shown with enhanced styling');
       } else {
@@ -653,17 +700,16 @@
       }
 
       if (scrollStatus) {
-        scrollStatus.innerHTML = '<span class="text-orange-600 text-lg font-semibold">⏳ Loading all remaining models...</span>';
+        scrollStatus.innerHTML = '<span class="text-orange-600 text-lg font-semibold">⏳ Loading more models...</span>';
       }
 
       try {
         currentPage++;
 
-        // Calculate remaining items to load all at once
-        const remainingItems = totalItems - currentItemCount;
-        const limitToUse = Math.min(remainingItems, 1000); // Cap at 1000 to prevent extremely large requests
+        // Use fixed page size
+        const limitToUse = 25;
 
-        console.log(`🚀 Loading ALL ${limitToUse} remaining models in one request (total: ${totalItems}, currently loaded: ${currentItemCount})`);
+        console.log(`🔄 Loading next page of ${limitToUse} models (loaded: ${currentItemCount} of ${totalItems})`);
 
         // Update status to show we're loading all at once
         updateModelCount();
@@ -703,22 +749,13 @@
           // Update the count display
           updateModelCount();
 
-          // Check if we've loaded all models
+          // Check if there are more pages
           if (!hasMorePages || currentItemCount >= totalItems) {
-            console.log('✅ All models loaded successfully!', {
-              hasMorePages,
-              currentItemCount,
-              totalItems
-            });
             const scrollStatus = document.getElementById('scrollStatus');
             if (scrollStatus) {
-              scrollStatus.innerHTML = '<span class="text-green-600 text-lg font-semibold">✅ All models loaded successfully!</span>';
+              scrollStatus.innerHTML = '<span class="text-green-600 text-lg font-semibold">✅ No more models to load</span>';
             }
             document.getElementById('endMessage').classList.remove('hidden');
-            // Clear auto-load interval if running
-            if (autoLoadInterval) {
-              clearInterval(autoLoadInterval);
-            }
           }
 
         } else {
@@ -735,77 +772,37 @@
       }
     }
 
-    // Scroll event listener for infinite scroll
-    function handleScroll() {
-      // Check if user is near bottom of page
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-
-      // Load more when user is within 200px of bottom
-      if (documentHeight - scrollTop - windowHeight < 200) {
-        loadMoreModels();
-      }
-    }
-
-    // Throttle scroll events for better performance
+    // Infinite scroll disabled; use Prev/Next buttons only
+    function handleScroll() {}
     let scrollTimeout;
-    window.addEventListener('scroll', function() {
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout);
-      }
-      scrollTimeout = setTimeout(handleScroll, 100);
-    });
-
-    // Load all remaining models immediately on page load
-    function startAutoLoading() {
-      console.log('🚀 startAutoLoading called', {
-        hasMorePages,
-        totalItems,
-        currentItemCount,
-        currentPage,
-        isCardView: window.isCardView
+    if (enableInfiniteScroll) {
+      window.addEventListener('scroll', function() {
+        if (scrollTimeout) {
+          clearTimeout(scrollTimeout);
+        }
+        scrollTimeout = setTimeout(handleScroll, 100);
       });
-
-      if (!hasMorePages) {
-        console.log('❌ No more pages to load');
-        return;
-      }
-
-      // Show loading indicator
-      const scrollStatus = document.getElementById('scrollStatus');
-      if (scrollStatus) {
-        scrollStatus.innerHTML = '<span class="text-blue-600">🔄 Preparing to load all remaining models...</span>';
-      }
-
-      // Load all remaining models after a brief delay
-      setTimeout(() => {
-        console.log('⏰ Starting loadMoreModels...');
-        loadMoreModels();
-      }, 1000); // 1 second delay to let initial page settle
     }
 
-    // Cancel loading functionality (since we load all at once now)
-    document.getElementById('pauseAutoLoad').addEventListener('click', function() {
-      // Since we load all at once, just hide the button and show cancelled status
-      this.classList.add('hidden');
-      document.getElementById('resumeAutoLoad').classList.remove('hidden');
-      document.getElementById('scrollStatus').innerHTML =
-        '<span class="text-orange-600">Loading cancelled</span>';
-    });
+    // Disable auto-load-all; rely on user scroll to fetch next pages
+    function startAutoLoading() { /* no-op */ }
 
-    document.getElementById('resumeAutoLoad').addEventListener('click', function() {
-      if (!hasMorePages) return;
-
-      // Resume loading all remaining models
-      this.classList.add('hidden');
-      document.getElementById('pauseAutoLoad').classList.remove('hidden');
-
-      // Trigger loading again
-      if (!isLoading) {
-        loadMoreModels();
-      }
-    });
+    // Pause/Resume controls disabled
+    if (enableInfiniteScroll) {
+      document.getElementById('pauseAutoLoad').addEventListener('click', function() {
+        this.classList.add('hidden');
+        document.getElementById('resumeAutoLoad').classList.remove('hidden');
+        document.getElementById('scrollStatus').innerHTML = '<span class="text-orange-600">Loading cancelled</span>';
+      });
+      document.getElementById('resumeAutoLoad').addEventListener('click', function() {
+        if (!hasMorePages) return;
+        this.classList.add('hidden');
+        document.getElementById('pauseAutoLoad').classList.remove('hidden');
+        if (!isLoading) {
+          loadMoreModels();
+        }
+      });
+    }
 
     // Initialize on page load
     document.addEventListener('DOMContentLoaded', function() {
@@ -823,11 +820,52 @@
         currentItemCount
       });
 
+      // Hook up pagination buttons
+      const prevBtn = document.getElementById('prevPageBtn');
+      const nextBtn = document.getElementById('nextPageBtn');
+      if (prevBtn) prevBtn.addEventListener('click', function() { fetchPage(Math.max(1, currentPage - 1)); });
+      if (nextBtn) nextBtn.addEventListener('click', function() { fetchPage(currentPage + 1); });
+
+      // Filter → reset to page 1 and fetch
+      const filterIds = ['filterGender','filterSize','filterModelType','filterApprovalStatus','filterMinAge','filterMaxAge','filterSort'];
+      filterIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('change', () => {
+            currentFilters.gender = document.getElementById('filterGender')?.value || '';
+            currentFilters.size = document.getElementById('filterSize')?.value || '';
+            currentFilters.modelType = document.getElementById('filterModelType')?.value || '';
+            currentFilters.approvalStatus = document.getElementById('filterApprovalStatus')?.value || '';
+            currentFilters.minAge = document.getElementById('filterMinAge')?.value || '';
+            currentFilters.maxAge = document.getElementById('filterMaxAge')?.value || '';
+            currentFilters.sort = document.getElementById('filterSort')?.value || '';
+            // Preserve sort direction if present on header toggle
+            const url = new URL(window.location.href);
+            currentFilters.sortDir = url.searchParams.get('sortDir') || (currentFilters.sort ? 'asc' : '');
+            fetchFirstPageWithFilters();
+          });
+        }
+      });
+
+      const resetBtn = document.getElementById('resetFilters');
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          document.getElementById('filterGender').value = '';
+          document.getElementById('filterSize').value = '';
+          document.getElementById('filterModelType').value = '';
+          const aps = document.getElementById('filterApprovalStatus');
+          if (aps) aps.value = '';
+          const minAgeEl = document.getElementById('filterMinAge'); if (minAgeEl) minAgeEl.value = '';
+          const maxAgeEl = document.getElementById('filterMaxAge'); if (maxAgeEl) maxAgeEl.value = '';
+          const sortEl = document.getElementById('filterSort'); if (sortEl) sortEl.value = '';
+          currentFilters = { gender: '', size: '', modelType: '', clientId: currentFilters.clientId, shootId: currentFilters.shootId, approvalStatus: '', minAge: '', maxAge: '', sort: '' };
+          fetchFirstPageWithFilters();
+        });
+      }
+
       // Small delay to ensure page is fully rendered
       setTimeout(() => {
-        console.log('🚀 Starting auto-loading sequence...');
-        // Start automatic loading of all models
-        startAutoLoading();
+        console.log('✅ Ready. Use pagination buttons to navigate.');
       }, 500);
     });
 
@@ -1048,6 +1086,187 @@
       }, 100);
     }
 
+    // Replace content for a specific page (used by Prev/Next buttons)
+    async function renderPage(adults, children) {
+      if (window.isCardView) {
+        const grid = document.getElementById('modelsGrid');
+        grid.innerHTML = '';
+        for (const adult of adults) {
+          const html = await generateAdultCardHtml(adult);
+          grid.insertAdjacentHTML('beforeend', html);
+        }
+        for (const child of children) {
+          const html = await generateChildCardHtml(child);
+          grid.insertAdjacentHTML('beforeend', html);
+        }
+        // Re-init filters for card view
+        setTimeout(() => { cardViewInit(); if (window.isCardView) filterCards(); }, 50);
+      } else {
+        const tbody = document.querySelector('#modelsTable tbody');
+        tbody.innerHTML = '';
+        for (const adult of adults) {
+          const rowHtml = await generateAdultRowHtml(adult);
+          tbody.insertAdjacentHTML('beforeend', rowHtml);
+        }
+        for (const child of children) {
+          const rowHtml = await generateChildRowHtml(child);
+          tbody.insertAdjacentHTML('beforeend', rowHtml);
+        }
+        setTimeout(() => {
+          // Re-init age and handlers after replace
+          document.querySelectorAll('tbody tr').forEach(row => {
+            const dobInput = row.querySelector('.dob-input');
+            const ageCell = row.querySelector('.age-cell');
+            if (dobInput && ageCell) {
+              ageCell.textContent = calculateAge(dobInput.value);
+              dobInput.addEventListener('input', function() { ageCell.textContent = calculateAge(dobInput.value); });
+            }
+          });
+          setupWeightChangeHandlers();
+        }, 50);
+      }
+    }
+
+    function updatePaginationControlsUI() {
+      const pageNumber = document.getElementById('pageNumber');
+      const pageCount = document.getElementById('pageCount');
+      const totalCount = document.getElementById('totalCount');
+      const itemCount = document.getElementById('itemCount');
+      const prevBtn = document.getElementById('prevPageBtn');
+      const nextBtn = document.getElementById('nextPageBtn');
+      if (pageNumber) pageNumber.textContent = String(currentPage);
+      if (pageCount) pageCount.textContent = String(totalPages);
+      if (totalCount) totalCount.textContent = String(totalItems);
+      if (itemCount) itemCount.textContent = String(currentItemCount);
+      if (prevBtn) prevBtn.disabled = currentPage <= 1;
+      if (nextBtn) nextBtn.disabled = !hasMorePages;
+      // Hide Next/Prev if single page of results
+      const controls = document.getElementById('paginationControls');
+      if (controls) {
+        const isSinglePage = totalItems <= itemsPerPage;
+        controls.style.display = isSinglePage ? 'none' : 'flex';
+      }
+    }
+
+    function refreshFiltersFromDOM() {
+      const g = document.getElementById('filterGender');
+      const s = document.getElementById('filterSize');
+      const mt = document.getElementById('filterModelType');
+      const aps = document.getElementById('filterApprovalStatus');
+      const minA = document.getElementById('filterMinAge');
+      const maxA = document.getElementById('filterMaxAge');
+      const sortSel = document.getElementById('filterSort');
+      const clientSel = document.getElementById('clientSelect');
+      const shootSel = document.getElementById('shootSelect');
+      currentFilters.gender = g ? g.value : '';
+      currentFilters.size = s ? s.value : '';
+      currentFilters.modelType = mt ? mt.value : '';
+      currentFilters.approvalStatus = aps ? aps.value : '';
+      currentFilters.minAge = minA ? minA.value : '';
+      currentFilters.maxAge = maxA ? maxA.value : '';
+      currentFilters.sort = sortSel ? sortSel.value : '';
+      currentFilters.clientId = clientSel ? clientSel.value : (currentFilters.clientId || '');
+      currentFilters.shootId = shootSel ? shootSel.value : (currentFilters.shootId || '');
+    }
+
+    async function fetchPage(targetPage) {
+      if (isLoading) return;
+      if (targetPage < 1) return;
+      if (targetPage === currentPage) return;
+      isLoading = true;
+      refreshFiltersFromDOM();
+      const limitToUse = itemsPerPage || 25;
+      const params = new URLSearchParams({
+        page: String(targetPage),
+        limit: String(limitToUse),
+        ...currentFilters
+      });
+      try {
+        const response = await fetch(`/admin/models/api?${params.toString()}`);
+        const data = await response.json();
+        if (data.success) {
+          await renderPage(data.data.adults, data.data.children);
+          currentPage = data.data.pagination.currentPage;
+          totalItems = data.data.pagination.totalItems;
+          hasMorePages = data.data.pagination.hasMore;
+          currentItemCount = data.data.pagination.loadedItems;
+          totalPages = Math.max(1, Math.ceil(totalItems / (itemsPerPage || 25)));
+          updatePaginationControlsUI();
+          updateModelCount();
+          updateUrlWithState(currentPage);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          alert('Failed to load page');
+        }
+      } catch (e) {
+        console.error('Pagination fetch error', e);
+        alert('Error loading page');
+      } finally {
+        isLoading = false;
+      }
+    }
+
+    async function fetchFirstPageWithFilters() {
+      // Reset to page 1
+      currentPage = 1;
+      refreshFiltersFromDOM();
+      const limitToUse = itemsPerPage || 25;
+      const params = new URLSearchParams({
+        page: '1',
+        limit: String(limitToUse),
+        ...currentFilters
+      });
+      try {
+        const response = await fetch(`/admin/models/api?${params.toString()}`);
+        const data = await response.json();
+        if (data.success) {
+          await renderPage(data.data.adults, data.data.children);
+          currentItemCount = data.data.pagination.loadedItems;
+          totalItems = data.data.pagination.totalItems;
+          hasMorePages = data.data.pagination.hasMore;
+          itemsPerPage = data.data.pagination.itemsPerPage || limitToUse;
+          totalPages = Math.max(1, Math.ceil(totalItems / (itemsPerPage || 25)));
+          updatePaginationControlsUI();
+          updateModelCount();
+          updateUrlWithState(1);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+          console.error('Filter fetch failed', data);
+        }
+      } catch (e) {
+        console.error('Filter fetch error', e);
+      }
+    }
+
+    function updateUrlWithState(pageNumber) {
+      try {
+        const url = new URL(window.location.href);
+        // Page and limit
+        url.searchParams.set('page', String(pageNumber || 1));
+        url.searchParams.set('limit', String(itemsPerPage || 25));
+        // Filters
+        const entries = Object.entries(currentFilters || {});
+        entries.forEach(([key, value]) => {
+          if (value && String(value).length > 0) {
+            url.searchParams.set(key, String(value));
+          } else {
+            url.searchParams.delete(key);
+          }
+        });
+        // Sort direction
+        if (currentFilters.sortDir) url.searchParams.set('sortDir', currentFilters.sortDir);
+        else url.searchParams.delete('sortDir');
+        // Persist view mode
+        const viewInput = document.querySelector('input[name="view"]');
+        if (viewInput && viewInput.value) {
+          url.searchParams.set('view', viewInput.value);
+        }
+        window.history.replaceState({}, '', url);
+      } catch (err) {
+        console.warn('Failed to update URL with state', err);
+      }
+    }
+
     // Generate HTML for adult card
     function generateAdultCardHtml(adult) {
       const photoHtml = adult.photo
@@ -1148,14 +1367,21 @@
       const photoHtml = adult.photo
         ? `<img data-src="${adult.photo}" class="w-12 h-12 rounded-full object-cover lazy" loading="lazy" alt="Adult Photo" />`
         : `<div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center"><span class="text-gray-400 text-sm">👤</span></div>`;
+      const status = (adult.approvalStatus === null || adult.approvalStatus === undefined || adult.approvalStatus === '')
+        ? null
+        : Number(adult.approvalStatus);
 
-      const approvalHtml = '<%= selectedShootId %>' ?
+      const isShootSelected = !!(document.getElementById('shootSelect') && document.getElementById('shootSelect').value);
+      const approvalHtml = isShootSelected ?
         `<td class="px-4 py-2 approval-cell">
-          <select class="input-gold w-24 approval-input" data-model-type="adult" data-model-id="${adult.id}">
-            <option value="">Pending</option>
-            <option value="1" ${adult.approvalStatus === 1 ? 'selected' : ''}>Approved</option>
-            <option value="0" ${adult.approvalStatus === 0 ? 'selected' : ''}>Disapproved</option>
-          </select>
+          <div class="flex items-center gap-2">
+            <select class="input-gold w-24 approval-input" data-model-type="adult" data-model-id="${adult.id}">
+              <option value="" ${status === null ? 'selected' : ''}>Pending</option>
+              <option value="1" ${status === 1 ? 'selected' : ''}>Approved</option>
+              <option value="0" ${status === 0 ? 'selected' : ''}>Disapproved</option>
+            </select>
+            <span class="text-sm font-semibold approval-status-badge">${status === 1 ? '✓ Approved' : (status === 0 ? '✗ Disapproved' : '— Pending')}</span>
+          </div>
         </td>` : '';
 
       return `
@@ -1216,18 +1442,25 @@
       const photoHtml = child.photo
         ? `<img data-src="${child.photo}" class="w-12 h-12 rounded-full object-cover lazy" loading="lazy" alt="Child Photo" />`
         : `<div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center"><span class="text-gray-400 text-sm">👤</span></div>`;
+      const status = (child.approvalStatus === null || child.approvalStatus === undefined || child.approvalStatus === '')
+        ? null
+        : Number(child.approvalStatus);
 
       const sizesDisplay = child.sizes && child.sizes.length > 0
         ? child.sizes.map(size => `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1 mb-1">${size.size}</span>`).join('')
         : '<span class="text-gray-500 text-xs">Auto-assigned on weight update</span>';
 
-      const approvalHtml = '<%= selectedShootId %>' ?
+      const isShootSelected = !!(document.getElementById('shootSelect') && document.getElementById('shootSelect').value);
+      const approvalHtml = isShootSelected ?
         `<td class="px-4 py-2 approval-cell">
-          <select class="input-gold w-24 approval-input" data-model-type="child" data-model-id="${child.id}">
-            <option value="">Pending</option>
-            <option value="1" ${child.approvalStatus === 1 ? 'selected' : ''}>Approved</option>
-            <option value="0" ${child.approvalStatus === 0 ? 'selected' : ''}>Disapproved</option>
-          </select>
+          <div class="flex items-center gap-2">
+            <select class="input-gold w-24 approval-input" data-model-type="child" data-model-id="${child.id}">
+              <option value="" ${status === null ? 'selected' : ''}>Pending</option>
+              <option value="1" ${status === 1 ? 'selected' : ''}>Approved</option>
+              <option value="0" ${status === 0 ? 'selected' : ''}>Disapproved</option>
+            </select>
+            <span class="text-sm font-semibold approval-status-badge">${status === 1 ? '✓ Approved' : (status === 0 ? '✗ Disapproved' : '— Pending')}</span>
+          </div>
         </td>` : '';
 
       return `
@@ -1523,6 +1756,12 @@
 
   // Sorting logic
   let currentSort = { column: null, direction: 'asc' };
+  function getServerSortForColumn(columnKey) {
+    if (columnKey === 'age' || columnKey === 'dob') return 'age';
+    if (columnKey === 'updatedAt') return 'updated';
+    if (columnKey === 'firstName' || columnKey === 'lastName' || columnKey === 'alpha') return 'alpha';
+    return null;
+  }
   function sortTable(column) {
     const table = document.querySelector('table');
     const tbody = table.querySelector('tbody');
@@ -1575,6 +1814,33 @@
   document.querySelectorAll('th.sortable').forEach(th => {
     th.addEventListener('click', function() {
       const col = th.getAttribute('data-sort');
+      // Prefer server-side sort for key columns
+      const serverSort = getServerSortForColumn(col);
+      if (serverSort) {
+        const sortSelect = document.getElementById('filterSort');
+        if (sortSelect) sortSelect.value = serverSort;
+        // Toggle direction on repeated clicks
+        const currentDir = currentFilters.sortDir || 'asc';
+        currentFilters.sortDir = (currentDir === 'asc') ? 'desc' : 'asc';
+        currentFilters.sort = serverSort;
+        // Reset to page 1 and fetch from server with sortDir
+        fetchFirstPageWithFilters();
+        // Also update URL immediately for visibility
+        try {
+          const u = new URL(window.location.href);
+          u.searchParams.set('sort', serverSort);
+          u.searchParams.set('sortDir', currentFilters.sortDir);
+          u.searchParams.set('page', '1');
+          u.searchParams.set('limit', String(itemsPerPage || 25));
+          window.history.replaceState({}, '', u);
+        } catch (e) {}
+        // Update arrow indicator on header
+        document.querySelectorAll('th.sortable .sort-arrow').forEach(el => el.textContent = '');
+        const arrow = th.querySelector('.sort-arrow');
+        if (arrow) arrow.textContent = (currentFilters.sortDir === 'desc') ? '▼' : '▲';
+        return;
+      }
+      // Fallback to client-side sort for non-key columns
       if (currentSort.column === col) {
         currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
       } else {
@@ -1583,6 +1849,21 @@
       }
       sortTable(col);
     });
+  });
+
+  // Keep approval status badge in sync when dropdowns change
+  document.addEventListener('change', function(e) {
+    if (e.target.classList.contains('approval-input')) {
+      const select = e.target;
+      const row = select.closest('tr');
+      const badge = row ? row.querySelector('.approval-status-badge') : null;
+      if (badge) {
+        const val = select.value;
+        if (val === '1') { badge.textContent = '✓ Approved'; badge.className = 'text-sm font-semibold approval-status-badge text-green-600'; }
+        else if (val === '0') { badge.textContent = '✗ Disapproved'; badge.className = 'text-sm font-semibold approval-status-badge text-red-600'; }
+        else { badge.textContent = '— Pending'; badge.className = 'text-sm font-semibold approval-status-badge text-blue-600'; }
+      }
+    }
   });
   </script>
   

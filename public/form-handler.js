@@ -13,6 +13,9 @@ class EnhancedFormHandler {
     document.querySelectorAll('form').forEach(form => {
       this.setupFormEnhancements(form);
     });
+
+    // Enable async pre-upload on relevant intake forms
+    this.setupAsyncPhotoUploads();
   }
 
   setupFormEnhancements(form) {
@@ -51,6 +54,74 @@ class EnhancedFormHandler {
         this.handleEnhancedSubmission(form);
       }
       // Regular forms submit normally but with loading state
+    });
+  }
+
+  setupAsyncPhotoUploads() {
+    // Attach to known photo input naming patterns: childPhoto{index}, adultPhoto{index}
+    const photoInputs = document.querySelectorAll('input[type="file"][name^="childPhoto"], input[type="file"][name^="adultPhoto"]');
+    photoInputs.forEach(input => {
+      input.addEventListener('change', async (e) => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+
+        // Validate file client-side
+        if (file.size > this.MAX_FILE_SIZE || !file.type.startsWith('image/')) {
+          return; // Existing validators will notify user
+        }
+
+        // Find surrounding form and index to store hidden URL
+        const form = input.closest('form');
+        const fieldName = input.name; // e.g., childPhoto0, adultPhoto1
+
+        // Show small uploading indicator
+        const indicator = document.createElement('div');
+        indicator.className = 'text-xs text-blue-600 mt-1';
+        indicator.textContent = 'Uploading photo...';
+        input.parentNode.appendChild(indicator);
+
+        try {
+          const compressedFile = await this.compressImage(file);
+          const body = new FormData();
+          body.append('file', compressedFile, compressedFile.name);
+
+          const resp = await fetch(`/upload/photo?field=${encodeURIComponent(fieldName)}`, {
+            method: 'POST',
+            body
+          });
+          const data = await resp.json();
+          if (!resp.ok || !data.success) throw new Error(data.error || 'Upload failed');
+
+          // Ensure a hidden input exists to hold the uploaded path used by server
+          // For adult: server reads req.body[photo{idx}]; for child: existingPhoto{idx}
+          const idx = fieldName.replace(/^[^0-9]*/, ''); // extract trailing digits
+          const isAdult = fieldName.startsWith('adultPhoto');
+          const hiddenName = isAdult ? `photo${idx}` : `existingPhoto${idx}`;
+          let hidden = form.querySelector(`input[type="hidden"][name="${hiddenName}"]`);
+          if (!hidden) {
+            hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = hiddenName;
+            form.appendChild(hidden);
+          }
+
+          // Prefer compressed path for display/storage
+          hidden.value = data.compressed || data.original;
+
+          // Update preview if present
+          const img = input.closest('.profile-pic-container')?.querySelector('img.profile-pic');
+          if (img && data.thumbnail) {
+            img.src = data.thumbnail;
+          }
+
+          indicator.textContent = 'Uploaded';
+          setTimeout(() => indicator.remove(), 1500);
+        } catch (err) {
+          console.error('Async photo upload failed:', err);
+          indicator.textContent = 'Upload failed. You can submit without photo and add later.';
+          setTimeout(() => indicator.remove(), 4000);
+        }
+      });
     });
   }
 
@@ -592,17 +663,23 @@ class EnhancedFormHandler {
   showFileInfo(input, file) {
     const sizeInMB = (file.size / 1024 / 1024).toFixed(2);
     const info = document.createElement('div');
-    info.className = 'text-xs text-gray-600 mt-1';
+    info.className = 'file-info text-xs text-gray-600 mt-2 text-center';
     info.textContent = `Selected: ${file.name} (${sizeInMB} MB)`;
-    
-    // Remove existing info
-    const existingInfo = input.parentNode.querySelector('.file-info');
-    if (existingInfo) {
-      existingInfo.remove();
+
+    // Determine a safe place to render the info so it doesn't obstruct the form
+    const container = input.closest('.profile-pic-container');
+    const targetParent = container ? container.parentNode : input.parentNode;
+
+    // Remove an existing info box in this section if present
+    const existingInfo = targetParent.querySelector('.file-info');
+    if (existingInfo) existingInfo.remove();
+
+    // Insert after the image container so it appears below the avatar, not over it
+    if (container) {
+      container.insertAdjacentElement('afterend', info);
+    } else {
+      targetParent.appendChild(info);
     }
-    
-    info.className += ' file-info';
-    input.parentNode.appendChild(info);
   }
 
   showAutoSaveIndicator(form) {

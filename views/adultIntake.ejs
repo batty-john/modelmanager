@@ -58,7 +58,7 @@
         <% }); %>
       </div>
     <% } %>
-    <form id="adultIntakeForm" action="<%= dashboardEdit ? '/dashboard/edit-adult' : '/intake/adult' %>" method="POST" enctype="multipart/form-data">
+    <form id="adultIntakeForm" action="<%= dashboardEdit ? '/dashboard/edit-adult' : '/intake/adult' %>" method="POST" enctype="multipart/form-data" data-initial-adults="<%= adults.length %>">
       <div id="adultsSection">
         <% adults.forEach(function(adult, index) { %>
         <div class="adult-section border-t pt-4 bg-gray-50 rounded-md p-4 border border-gray-200 mb-8" data-index="<%= index %>">
@@ -83,6 +83,7 @@
                 <% } else { %>
                   <div class="profile-pic-placeholder">+</div>
                   <input type="file" id="adultPhoto<%= index %>" name="adultPhoto<%= index %>" accept="image/*" class="profile-pic-input <%= errors && errors.some(e => e.field === `photo${index}`) ? 'border-red-500 ring-2 ring-red-400' : '' %>">
+                  <input type="hidden" name="photo<%= index %>" value="">
                   <% if (errors && errors.some(e => e.field === `photo${index}`)) { %>
                     <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === `photo${index}`).msg %></div>
                   <% } %>
@@ -179,14 +180,14 @@
             <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === 'preferredContact').msg %></div>
           <% } %>
         </div>
-        <div class="facebook-link-section" style="display: <%= user && user.preferredContact === 'Facebook' ? 'block' : 'none' %>;">
+        <div class="facebook-link-section <%= (user && user.preferredContact === 'Facebook') ? '' : 'hidden' %>">
           <label for="facebookProfileLink" class="block text-sm font-medium text-gray-700">Facebook Profile Link</label>
                       <input type="url" id="facebookProfileLink" name="facebookProfileLink" class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-400 focus:ring-green-400 py-2 px-4 <%= errors && errors.some(e => e.field === 'facebookProfileLink') ? 'border-red-500 ring-2 ring-red-400' : '' %>" value="<%= user ? user.facebookProfileLink : '' %>">
           <% if (errors && errors.some(e => e.field === 'facebookProfileLink')) { %>
             <div class="text-red-600 text-xs mt-1"><%= errors.find(e => e.field === 'facebookProfileLink').msg %></div>
           <% } %>
         </div>
-        <div class="instagram-link-section" style="display: <%= user && user.preferredContact === 'Instagram' ? 'block' : 'none' %>;">
+        <div class="instagram-link-section <%= (user && user.preferredContact === 'Instagram') ? '' : 'hidden' %>">
           <label for="instagramProfileLink" class="block text-sm font-medium text-gray-700">Instagram Profile Link</label>
                       <input type="url" id="instagramProfileLink" name="instagramProfileLink" class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-400 focus:ring-green-400 py-2 px-4" value="<%= user ? user.instagramProfileLink : '' %>">
         </div>
@@ -206,6 +207,10 @@
           <p class="text-xs text-gray-500 mt-1">Separate multiple brands with commas. Example: Nike, Adidas, Gap</p>
         </div>
       </div>
+      <div class="flex items-center mb-4">
+        <input id="deferPhotos" name="deferPhotos" type="checkbox" value="true" class="mr-2">
+        <label for="deferPhotos" class="text-sm text-gray-700">I will upload photos later</label>
+      </div>
       <button type="submit" class="btn-gold-gradient px-8 py-2 w-full mt-8">
         <span class="button-text">Submit</span>
       </button>
@@ -213,7 +218,8 @@
   </div>
   <script>
     // Add adult section dynamically
-    let adultIndex = <%= adults.length - 1 %>;
+    const adultFormEl = document.getElementById('adultIntakeForm');
+    let adultIndex = (parseInt(adultFormEl.getAttribute('data-initial-adults')) || 1) - 1;
     function attachAddSpouseListener() {
       const addBtn = document.getElementById('addAdult');
       if (!addBtn) return;

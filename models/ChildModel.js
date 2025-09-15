@@ -1,5 +1,6 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../config/database');
+const User = require('./User');
 
 const ChildModel = sequelize.define('ChildModel', {
   childFirstName: {
@@ -52,3 +53,5 @@ ChildModel.associate = function(models) {
 };
 
 module.exports = ChildModel; 
+// Associate child models to users for efficient includes
+ChildModel.belongsTo(User, { foreignKey: 'userId' });

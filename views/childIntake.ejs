@@ -97,11 +97,13 @@
                     <div class="profile-pic-container mx-auto">
                       <img src="<%= child.photo %>" alt="Child's Photo" class="profile-pic" loading="lazy">
                       <input type="file" id="childPhoto<%= index %>" name="childPhoto<%= index %>" accept="image/*" class="profile-pic-input py-2 px-4">
+                      <input type="hidden" name="existingPhoto<%= index %>" value="<%= child.photo %>">
                     </div>
                   <% } else { %>
                     <div class="profile-pic-container mx-auto">
                       <div class="profile-pic-placeholder">+</div>
                       <input type="file" id="childPhoto<%= index %>" name="childPhoto<%= index %>" accept="image/*" required class="profile-pic-input py-2 px-4">
+                      <input type="hidden" name="existingPhoto<%= index %>" value="">
                     </div>
                   <% } %>
                 </div>
@@ -145,11 +147,13 @@
                   <div class="profile-pic-container mx-auto">
                     <img src="<%= children[0].photo %>" alt="Child's Photo" class="profile-pic" loading="lazy">
                     <input type="file" id="childPhoto0" name="childPhoto0" accept="image/*" class="profile-pic-input py-2 px-4">
+                    <input type="hidden" name="existingPhoto0" value="<%= children[0].photo %>">
                   </div>
                 <% } else { %>
                   <div class="profile-pic-container mx-auto">
                     <div class="profile-pic-placeholder">+</div>
                     <input type="file" id="childPhoto0" name="childPhoto0" accept="image/*" required class="profile-pic-input py-2 px-4">
+                    <input type="hidden" name="existingPhoto0" value="">
                   </div>
                 <% } %>
               </div>
@@ -221,6 +225,10 @@
         </div>
       </div>
 
+      <div class="flex items-center mb-4">
+        <input id="deferPhotos" name="deferPhotos" type="checkbox" value="true" class="mr-2">
+        <label for="deferPhotos" class="text-sm text-gray-700">I will upload photos later</label>
+      </div>
           <button type="submit" class="btn-gold-gradient px-8 py-2 w-full">
       <span class="button-text"><%= dashboardEdit ? 'Save Changes' : 'Submit' %></span>
     </button>

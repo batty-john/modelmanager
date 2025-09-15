@@ -250,6 +250,39 @@ const processUploadedImages = async (req, res, next) => {
   }
 };
 
+// POST /dashboard/upload-photo — user uploads a photo and attaches it to a model
+router.post('/dashboard/upload-photo', requireLogin, upload.single('file'), handleMulterError, processUploadedImages, async (req, res) => {
+  try {
+    const { modelType, modelId } = req.body;
+    if (!modelType || !modelId) {
+      return res.status(400).json({ success: false, error: 'modelType and modelId are required' });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded' });
+    }
+
+    // Determine best processed path
+    const bestPath = getBestPhotoPath(req, req.file.filename, '');
+
+    if (modelType === 'child') {
+      const child = await ChildModel.findOne({ where: { id: modelId, userId: req.session.userId } });
+      if (!child) return res.status(404).json({ success: false, error: 'Child not found' });
+      await child.update({ photo: bestPath });
+      return res.json({ success: true, photo: bestPath });
+    } else if (modelType === 'adult') {
+      const adult = await AdultModel.findOne({ where: { id: modelId, userId: req.session.userId } });
+      if (!adult) return res.status(404).json({ success: false, error: 'Adult not found' });
+      await adult.update({ photo: bestPath });
+      return res.json({ success: true, photo: bestPath });
+    } else {
+      return res.status(400).json({ success: false, error: 'Invalid modelType' });
+    }
+  } catch (error) {
+    console.error('Error in /dashboard/upload-photo:', error);
+    return res.status(500).json({ success: false, error: 'Server error' });
+  }
+});
+
 // GET /dashboard
 router.get('/dashboard', requireLogin, async (req, res) => {
   try {
@@ -781,10 +814,10 @@ router.get('/admin/models', requireAdmin, async (req, res) => {
   // Extract filters and sorting from query params
   const { gender, minAge, maxAge, weight, size, brands, excludeBrands, modelType, sort, view, clientId, shootId, approvalStatus, page, limit } = req.query;
 
-  // For now, load everything on initial render (disable pagination)
-  const currentPage = 1;
-  const itemsPerPage = Number.MAX_SAFE_INTEGER;
-  const offset = 0;
+  // Server-side pagination
+  const currentPage = parseInt(page) || 1;
+  const itemsPerPage = parseInt(limit) || 25;
+  const offset = (currentPage - 1) * itemsPerPage;
   
   // Build queries for adults and children
   const adultWhere = {};
@@ -796,6 +829,24 @@ router.get('/admin/models', requireAdmin, async (req, res) => {
   if (size) {
     adultWhere.size = size;
   }
+  // Age filtering: translate minAge/maxAge (years) to DOB bounds
+  const { Op } = require('sequelize');
+  const now = new Date();
+  const toYearsAgoDate = (years) => {
+    const d = new Date(now);
+    d.setFullYear(d.getFullYear() - years);
+    return d;
+  };
+  const minAgeNum = parseInt(minAge);
+  const maxAgeNum = parseInt(maxAge);
+  if (!isNaN(minAgeNum)) {
+    adultWhere.dob = Object.assign({}, adultWhere.dob, { [Op.lte]: toYearsAgoDate(minAgeNum) });
+    childWhere.childDOB = Object.assign({}, childWhere.childDOB, { [Op.lte]: toYearsAgoDate(minAgeNum) });
+  }
+  if (!isNaN(maxAgeNum)) {
+    adultWhere.dob = Object.assign({}, adultWhere.dob, { [Op.gte]: toYearsAgoDate(maxAgeNum) });
+    childWhere.childDOB = Object.assign({}, childWhere.childDOB, { [Op.gte]: toYearsAgoDate(maxAgeNum) });
+  }
   
   // Add more filters as needed (age, weight, brands, etc.)
   // Fetch adults and children with pagination
@@ -805,13 +856,31 @@ router.get('/admin/models', requireAdmin, async (req, res) => {
   let totalChildren = 0;
 
   if (modelType !== 'child') {
+    // Determine ordering
+    const dir = (sort && req.query.sortDir === 'desc') ? 'DESC' : (sort ? 'ASC' : 'DESC');
+    let adultOrder = [['createdAt', 'DESC']];
+    if (sort === 'age') adultOrder = [['dob', dir]];
+    else if (sort === 'alpha') adultOrder = [['lastName', dir], ['firstName', dir]];
+    else if (sort === 'updated') adultOrder = [['updatedAt', dir]];
+    else if (sort === 'approval' && shootId) {
+      const approvalExpr = require('sequelize').literal(`(SELECT approvalStatus FROM ModelApprovals WHERE shootId=${Number(shootId)} AND modelType='adult' AND modelId=Adults.id LIMIT 1)`);
+      adultOrder = [[approvalExpr, dir]];
+    }
+    else if (sort === 'approval') adultOrder = [[Sequelize.literal('CASE WHEN "approvalStatus" IS NULL THEN 2 WHEN "approvalStatus"=0 THEN 1 ELSE 0 END'), dir]];
     // Get total count
     totalAdults = await AdultModel.count({ where: adultWhere });
 
-    // Fetch all adults
+    // Fetch adults with pagination and include user
     adults = await AdultModel.findAll({
       where: adultWhere,
-      order: [['createdAt', 'DESC']] // Default ordering
+      include: [{
+        model: User,
+        required: false,
+        attributes: ['email','parentPhone','preferredContact','facebookProfileLink','instagramProfileLink','parentFirstName','parentLastName','brands']
+      }],
+      limit: itemsPerPage,
+      offset: offset,
+      order: adultOrder // Server-side sort
     });
   }
 
@@ -837,80 +906,106 @@ router.get('/admin/models', requireAdmin, async (req, res) => {
       }]
     });
 
-    // Fetch all children
+    // Determine ordering
+    const dirChild = (sort && req.query.sortDir === 'desc') ? 'DESC' : (sort ? 'ASC' : 'DESC');
+    let childOrder = [['createdAt', 'DESC']];
+    if (sort === 'age') childOrder = [['childDOB', dirChild]];
+    else if (sort === 'alpha') childOrder = [['childLastName', dirChild], ['childFirstName', dirChild]];
+    else if (sort === 'updated') childOrder = [['updatedAt', dirChild]];
+    else if (sort === 'approval' && shootId) {
+      const approvalExprChild = require('sequelize').literal(`(SELECT approvalStatus FROM ModelApprovals WHERE shootId=${Number(shootId)} AND modelType='child' AND modelId=ChildModels.id LIMIT 1)`);
+      childOrder = [[approvalExprChild, dirChild]];
+    }
+    else if (sort === 'approval') childOrder = [[Sequelize.literal('CASE WHEN "approvalStatus" IS NULL THEN 2 WHEN "approvalStatus"=0 THEN 1 ELSE 0 END'), dirChild]];
+
+    // Fetch children with pagination and includes
     children = await ChildModel.findAll({
       where: childWhere,
-      include: [{
-        model: require('../models').ChildSize,
-        as: 'sizes',
-        required: false
-      }],
-      order: [['createdAt', 'DESC']] // Default ordering
+      include: [
+        {
+          model: require('../models').ChildSize,
+          as: 'sizes',
+          required: false
+        },
+        {
+          model: User,
+          required: false,
+          attributes: ['email','parentPhone','preferredContact','facebookProfileLink','instagramProfileLink','parentFirstName','parentLastName','brands']
+        }
+      ],
+      limit: itemsPerPage,
+      offset: offset,
+      order: childOrder // Server-side sort
     });
   }
 
   // Calculate pagination info
   const totalItems = totalAdults + totalChildren;
-  const hasNextPage = false;
-  const hasPrevPage = false;
+  const initialLoaded = adults.length + children.length;
+  const hasNextPage = initialLoaded < totalItems;
+  const hasPrevPage = currentPage > 1;
 
-  // Fetch and merge user-level fields for each adult
+  // Merge user-level fields from includes (avoids N+1)
   for (const adult of adults) {
-    if (adult.userId) {
-      const user = await User.findByPk(adult.userId);
-      if (user) {
-        adult.brandsWorkedWith = user.brands || '';
-        adult.phone = user.parentPhone || '';
-        adult.email = user.email || '';
-        adult.preferredContact = user.preferredContact || '';
-        adult.facebookProfileLink = user.facebookProfileLink || '';
-        adult.instagramProfileLink = user.instagramProfileLink || '';
-        adult.parentFirstName = user.parentFirstName || '';
-        adult.parentLastName = user.parentLastName || '';
-      }
+    if (adult.User) {
+      adult.brandsWorkedWith = adult.User.brands || '';
+      adult.phone = adult.User.parentPhone || '';
+      adult.email = adult.User.email || '';
+      adult.preferredContact = adult.User.preferredContact || '';
+      adult.facebookProfileLink = adult.User.facebookProfileLink || '';
+      adult.instagramProfileLink = adult.User.instagramProfileLink || '';
+      adult.parentFirstName = adult.User.parentFirstName || '';
+      adult.parentLastName = adult.User.parentLastName || '';
     }
   }
   
-  // Fetch and merge user-level fields for each child
   for (const child of children) {
-    if (child.userId) {
-      const user = await User.findByPk(child.userId);
-      if (user) {
-        child.brandsWorkedWith = user.brands || '';
-        child.parentPhone = user.parentPhone || '';
-        child.parentEmail = user.email || '';
-        child.preferredContact = user.preferredContact || '';
-        child.facebookProfileLink = user.facebookProfileLink || '';
-        child.instagramProfileLink = user.instagramProfileLink || '';
-        child.parentFirstName = user.parentFirstName || '';
-        child.parentLastName = user.parentLastName || '';
-      }
+    if (child.User) {
+      child.brandsWorkedWith = child.User.brands || '';
+      child.parentPhone = child.User.parentPhone || '';
+      child.parentEmail = child.User.email || '';
+      child.preferredContact = child.User.preferredContact || '';
+      child.facebookProfileLink = child.User.facebookProfileLink || '';
+      child.instagramProfileLink = child.User.instagramProfileLink || '';
+      child.parentFirstName = child.User.parentFirstName || '';
+      child.parentLastName = child.User.parentLastName || '';
     }
   }
 
   // If a shoot is selected, fetch approval status for all models
   if (shootId) {
-    // Fetch approval status for adults
-    for (const adult of adults) {
-      const approval = await ModelApproval.findOne({
-        where: { shootId, modelType: 'adult', modelId: adult.id }
+    // Batch approvals to avoid N+1
+    const { Op } = require('sequelize');
+    const adultIds = adults.map(a => a.id);
+    const childIds = children.map(c => c.id);
+
+    if (adultIds.length) {
+      const adultApprovals = await ModelApproval.findAll({
+        where: { shootId, modelType: 'adult', modelId: { [Op.in]: adultIds } }
       });
-      adult.approvalStatus = approval ? approval.approvalStatus : null;
-      adult.approvalNotes = approval ? approval.notes : null;
+      const adultApprovalById = new Map(adultApprovals.map(a => [a.modelId, a]));
+      for (const adult of adults) {
+        const approval = adultApprovalById.get(adult.id);
+        adult.approvalStatus = approval ? approval.approvalStatus : null;
+        adult.approvalNotes = approval ? approval.notes : null;
+      }
     }
-    
-    // Fetch approval status for children
-    for (const child of children) {
-      const approval = await ModelApproval.findOne({
-        where: { shootId, modelType: 'child', modelId: child.id }
+
+    if (childIds.length) {
+      const childApprovals = await ModelApproval.findAll({
+        where: { shootId, modelType: 'child', modelId: { [Op.in]: childIds } }
       });
-      child.approvalStatus = approval ? approval.approvalStatus : null;
-      child.approvalNotes = approval ? approval.notes : null;
+      const childApprovalById = new Map(childApprovals.map(a => [a.modelId, a]));
+      for (const child of children) {
+        const approval = childApprovalById.get(child.id);
+        child.approvalStatus = approval ? approval.approvalStatus : null;
+        child.approvalNotes = approval ? approval.notes : null;
+      }
     }
-    
-    // Filter by approval status if specified
+
+    // Filter by approval status if specified (supports 'null' for pending)
     if (approvalStatus !== undefined && approvalStatus !== '') {
-      const status = parseInt(approvalStatus);
+      const status = (approvalStatus === 'null' || approvalStatus === null) ? null : parseInt(approvalStatus);
       adults = adults.filter(adult => adult.approvalStatus === status);
       children = children.filter(child => child.approvalStatus === status);
     }
@@ -1040,6 +1135,25 @@ router.get('/admin/models/api', requireAdmin, async (req, res) => {
       adultWhere.size = size;
     }
 
+    // Age filtering: convert minAge/maxAge to DOB bounds
+    const { Op } = require('sequelize');
+    const now = new Date();
+    const toYearsAgoDate = (years) => {
+      const d = new Date(now);
+      d.setFullYear(d.getFullYear() - years);
+      return d;
+    };
+    const minAgeNum = parseInt(minAge);
+    const maxAgeNum = parseInt(maxAge);
+    if (!isNaN(minAgeNum)) {
+      adultWhere.dob = Object.assign({}, adultWhere.dob, { [Op.lte]: toYearsAgoDate(minAgeNum) });
+      childWhere.childDOB = Object.assign({}, childWhere.childDOB, { [Op.lte]: toYearsAgoDate(minAgeNum) });
+    }
+    if (!isNaN(maxAgeNum)) {
+      adultWhere.dob = Object.assign({}, adultWhere.dob, { [Op.gte]: toYearsAgoDate(maxAgeNum) });
+      childWhere.childDOB = Object.assign({}, childWhere.childDOB, { [Op.gte]: toYearsAgoDate(maxAgeNum) });
+    }
+
     // Calculate total items for pagination
     let totalAdults = 0;
     let totalChildren = 0;
@@ -1074,11 +1188,21 @@ router.get('/admin/models/api', requireAdmin, async (req, res) => {
     let children = [];
 
     if (modelType !== 'child') {
+      const dir = (sort && req.query.sortDir === 'desc') ? 'DESC' : (sort ? 'ASC' : 'DESC');
+      let adultOrder = [['createdAt', 'DESC']];
+      if (sort === 'age') adultOrder = [['dob', dir]];
+      else if (sort === 'alpha') adultOrder = [['lastName', dir], ['firstName', dir]];
+      else if (sort === 'updated') adultOrder = [['updatedAt', dir]];
       adults = await AdultModel.findAll({
         where: adultWhere,
+        include: [{
+          model: User,
+          required: false,
+          attributes: ['email','parentPhone','preferredContact','facebookProfileLink','instagramProfileLink','parentFirstName','parentLastName','brands']
+        }],
         limit: itemsPerPage,
         offset: offset,
-        order: [['createdAt', 'DESC']]
+        order: adultOrder
       });
     }
 
@@ -1093,82 +1217,94 @@ router.get('/admin/models/api', requireAdmin, async (req, res) => {
         }
       }
 
+      const dirChild = (sort && req.query.sortDir === 'desc') ? 'DESC' : (sort ? 'ASC' : 'DESC');
+      let childOrder = [['createdAt', 'DESC']];
+      if (sort === 'age') childOrder = [['childDOB', dirChild]];
+      else if (sort === 'alpha') childOrder = [['childLastName', dirChild], ['childFirstName', dirChild]];
+      else if (sort === 'updated') childOrder = [['updatedAt', dirChild]];
       children = await ChildModel.findAll({
         where: childWhere,
-        include: [{
-          model: require('../models').ChildSize,
-          as: 'sizes',
-          required: false
-        }],
+        include: [
+          {
+            model: require('../models').ChildSize,
+            as: 'sizes',
+            required: false
+          },
+          {
+            model: User,
+            required: false,
+            attributes: ['email','parentPhone','preferredContact','facebookProfileLink','instagramProfileLink','parentFirstName','parentLastName','brands']
+          }
+        ],
         limit: itemsPerPage,
         offset: offset,
-        order: [['createdAt', 'DESC']]
+        order: childOrder
       });
     }
 
-    // Process user data for adults (same as original route)
+    // Merge included user data (use setDataValue so fields are present in JSON)
     for (const adult of adults) {
-      if (adult.userId) {
-        try {
-          const user = await User.findByPk(adult.userId);
-          if (user) {
-            adult.brandsWorkedWith = user.brands || '';
-            adult.phone = user.parentPhone || '';
-            adult.email = user.email || '';
-            adult.preferredContact = user.preferredContact || '';
-            adult.facebookProfileLink = user.facebookProfileLink || '';
-            adult.instagramProfileLink = user.instagramProfileLink || '';
-            adult.parentFirstName = user.parentFirstName || '';
-            adult.parentLastName = user.parentLastName || '';
-          } else {
-            console.log(`API: User not found for adult ${adult.id}, userId: ${adult.userId}`);
-          }
-        } catch (error) {
-          console.log(`API: Error finding user for adult ${adult.id}:`, error.message);
-        }
+      if (adult.User) {
+        adult.setDataValue('brandsWorkedWith', adult.User.brands || '');
+        adult.setDataValue('phone', adult.User.parentPhone || '');
+        adult.setDataValue('email', adult.User.email || '');
+        adult.setDataValue('preferredContact', adult.User.preferredContact || '');
+        adult.setDataValue('facebookProfileLink', adult.User.facebookProfileLink || '');
+        adult.setDataValue('instagramProfileLink', adult.User.instagramProfileLink || '');
+        adult.setDataValue('parentFirstName', adult.User.parentFirstName || '');
+        adult.setDataValue('parentLastName', adult.User.parentLastName || '');
       }
     }
 
-    // Process user data for children (same as original route)
     for (const child of children) {
-      if (child.userId) {
-        try {
-          const user = await User.findByPk(child.userId);
-          if (user) {
-            child.brandsWorkedWith = user.brands || '';
-            child.parentPhone = user.parentPhone || '';
-            child.parentEmail = user.email || '';
-            child.preferredContact = user.preferredContact || '';
-            child.facebookProfileLink = user.facebookProfileLink || '';
-            child.instagramProfileLink = user.instagramProfileLink || '';
-            child.parentFirstName = user.parentFirstName || '';
-            child.parentLastName = user.parentLastName || '';
-          } else {
-            console.log(`API: User not found for child ${child.id}, userId: ${child.userId}`);
-          }
-        } catch (error) {
-          console.log(`API: Error finding user for child ${child.id}:`, error.message);
-        }
+      if (child.User) {
+        child.setDataValue('brandsWorkedWith', child.User.brands || '');
+        child.setDataValue('parentPhone', child.User.parentPhone || '');
+        child.setDataValue('parentEmail', child.User.email || '');
+        child.setDataValue('preferredContact', child.User.preferredContact || '');
+        child.setDataValue('facebookProfileLink', child.User.facebookProfileLink || '');
+        child.setDataValue('instagramProfileLink', child.User.instagramProfileLink || '');
+        child.setDataValue('parentFirstName', child.User.parentFirstName || '');
+        child.setDataValue('parentLastName', child.User.parentLastName || '');
       }
     }
 
 
 
-    // If a shoot is selected, fetch approval status
+    // If a shoot is selected, batch-fetch approval status
     if (shootId) {
-      for (const adult of adults) {
-        const approval = await ModelApproval.findOne({
-          where: { shootId, modelType: 'adult', modelId: adult.id }
+      const { Op } = require('sequelize');
+      const adultIds = adults.map(a => a.id);
+      const childIds = children.map(c => c.id);
+
+      if (adultIds.length) {
+        const adultApprovals = await ModelApproval.findAll({
+          where: { shootId, modelType: 'adult', modelId: { [Op.in]: adultIds } }
         });
-        adult.approvalStatus = approval ? approval.approvalStatus : null;
+        const mapA = new Map(adultApprovals.map(a => [a.modelId, a]));
+        for (const adult of adults) {
+          const approval = mapA.get(adult.id);
+          adult.setDataValue('approvalStatus', (approval && approval.approvalStatus !== undefined) ? approval.approvalStatus : null);
+        }
       }
 
-      for (const child of children) {
-        const approval = await ModelApproval.findOne({
-          where: { shootId, modelType: 'child', modelId: child.id }
+      if (childIds.length) {
+        const childApprovals = await ModelApproval.findAll({
+          where: { shootId, modelType: 'child', modelId: { [Op.in]: childIds } }
         });
-        child.approvalStatus = approval ? approval.approvalStatus : null;
+        const mapC = new Map(childApprovals.map(a => [a.modelId, a]));
+        for (const child of children) {
+          const approval = mapC.get(child.id);
+          child.setDataValue('approvalStatus', (approval && approval.approvalStatus !== undefined) ? approval.approvalStatus : null);
+        }
       }
+    }
+
+    // Apply approvalStatus filter if provided (after approvals are annotated)
+    if (shootId && approvalStatus !== undefined && approvalStatus !== '') {
+      const status = (approvalStatus === 'null' || approvalStatus === null) ? null : parseInt(approvalStatus);
+      adults = adults.filter(a => a.approvalStatus === status);
+      children = children.filter(c => c.approvalStatus === status);
     }
 
     // Calculate total items for this page
@@ -1647,27 +1783,32 @@ router.post('/admin/shoots/delete', async (req, res) => {
 // GET /client/dashboard - Client dashboard for reviewing models
 router.get('/client/dashboard', requireClient, async (req, res) => {
   try {
-    const { shootId, gender, size, approvalStatus } = req.query;
-    
+    const { shootId, gender, size, approvalStatus, page, limit } = req.query;
+
     // Get client info
     const client = await Client.findByPk(req.session.clientId);
-    
+
     // Get all shoots for this client
     const shoots = await Shoot.findAll({
       where: { clientId: req.session.clientId, isActive: true },
       order: [['createdAt', 'DESC']]
     });
-    
+
     // If no shoot is selected, show the first one or empty state
     let selectedShootId = shootId;
     if (!selectedShootId && shoots.length > 0) {
       selectedShootId = shoots[0].id;
     }
-    
+
+    // Pagination
+    const currentPage = parseInt(page) || 1;
+    const itemsPerPage = parseInt(limit) || 25;
+    const offset = (currentPage - 1) * itemsPerPage;
+
     // Build queries for adults and children
     const adultWhere = {};
     const childWhere = {};
-    
+
     if (gender) {
       adultWhere.gender = gender;
       childWhere.childGender = gender;
@@ -1675,22 +1816,20 @@ router.get('/client/dashboard', requireClient, async (req, res) => {
     if (size) {
       adultWhere.size = size;
     }
-    
-    // Fetch all adults and children
-    let adults = await AdultModel.findAll({ where: adultWhere });
-    
-    let children = [];
+
+    // Count totals first
+    let totalAdults = await AdultModel.count({ where: adultWhere });
+
     if (size) {
-      // For size filtering, find children that have this size in their ChildSizes
       const childIds = await getChildrenBySize(size);
       if (childIds.length > 0) {
         childWhere.id = { [require('sequelize').Op.in]: childIds };
       } else {
-        // No children match this size, return empty array
-        childWhere.id = -1; // This will match no records
+        childWhere.id = -1;
       }
     }
-    children = await ChildModel.findAll({ 
+
+    let totalChildren = await ChildModel.count({
       where: childWhere,
       include: [{
         model: require('../models').ChildSize,
@@ -1698,76 +1837,115 @@ router.get('/client/dashboard', requireClient, async (req, res) => {
         required: false
       }]
     });
-    
-    // Fetch and merge user-level fields for each adult
+
+    const totalItems = totalAdults + totalChildren;
+
+    // Fetch paginated adults and children with includes
+    let adults = await AdultModel.findAll({
+      where: adultWhere,
+      include: [{
+        model: User,
+        required: false,
+        attributes: ['email','parentPhone','preferredContact','facebookProfileLink','instagramProfileLink','parentFirstName','parentLastName','brands']
+      }],
+      limit: itemsPerPage,
+      offset: offset,
+      order: [['createdAt', 'DESC']]
+    });
+
+    let children = await ChildModel.findAll({
+      where: childWhere,
+      include: [
+        {
+          model: require('../models').ChildSize,
+          as: 'sizes',
+          required: false
+        },
+        {
+          model: User,
+          required: false,
+          attributes: ['email','parentPhone','preferredContact','facebookProfileLink','instagramProfileLink','parentFirstName','parentLastName','brands']
+        }
+      ],
+      limit: itemsPerPage,
+      offset: offset,
+      order: [['createdAt', 'DESC']]
+    });
+
+    // Merge user fields
     for (const adult of adults) {
-      if (adult.userId) {
-        const user = await User.findByPk(adult.userId);
-        if (user) {
-          adult.brandsWorkedWith = user.brands || '';
-          adult.phone = user.parentPhone || '';
-          adult.email = user.email || '';
-          adult.preferredContact = user.preferredContact || '';
-          adult.facebookProfileLink = user.facebookProfileLink || '';
-          adult.instagramProfileLink = user.instagramProfileLink || '';
-          adult.parentFirstName = user.parentFirstName || '';
-          adult.parentLastName = user.parentLastName || '';
-        }
+      if (adult.User) {
+        adult.brandsWorkedWith = adult.User.brands || '';
+        adult.phone = adult.User.parentPhone || '';
+        adult.email = adult.User.email || '';
+        adult.preferredContact = adult.User.preferredContact || '';
+        adult.facebookProfileLink = adult.User.facebookProfileLink || '';
+        adult.instagramProfileLink = adult.User.instagramProfileLink || '';
+        adult.parentFirstName = adult.User.parentFirstName || '';
+        adult.parentLastName = adult.User.parentLastName || '';
       }
     }
-    
-    // Fetch and merge user-level fields for each child
     for (const child of children) {
-      if (child.userId) {
-        const user = await User.findByPk(child.userId);
-        if (user) {
-          child.brandsWorkedWith = user.brands || '';
-          child.parentPhone = user.parentPhone || '';
-          child.parentEmail = user.email || '';
-          child.preferredContact = user.preferredContact || '';
-          child.facebookProfileLink = user.facebookProfileLink || '';
-          child.instagramProfileLink = user.instagramProfileLink || '';
-          child.parentFirstName = user.parentFirstName || '';
-          child.parentLastName = user.parentLastName || '';
-        }
+      if (child.User) {
+        child.brandsWorkedWith = child.User.brands || '';
+        child.parentPhone = child.User.parentPhone || '';
+        child.parentEmail = child.User.email || '';
+        child.preferredContact = child.User.preferredContact || '';
+        child.facebookProfileLink = child.User.facebookProfileLink || '';
+        child.instagramProfileLink = child.User.instagramProfileLink || '';
+        child.parentFirstName = child.User.parentFirstName || '';
+        child.parentLastName = child.User.parentLastName || '';
       }
     }
-    
-    // If a shoot is selected, fetch approval status for all models
+
+    // Batch approvals
     if (selectedShootId) {
-      // Fetch approval status for adults
-      for (const adult of adults) {
-        const approval = await ModelApproval.findOne({
-          where: { shootId: selectedShootId, modelType: 'adult', modelId: adult.id }
-        });
-        adult.approvalStatus = approval ? approval.approvalStatus : null;
-        adult.approvalNotes = approval ? approval.notes : null;
+      const { Op } = require('sequelize');
+      const adultIds = adults.map(a => a.id);
+      const childIds = children.map(c => c.id);
+
+      if (adultIds.length) {
+        const aa = await ModelApproval.findAll({ where: { shootId: selectedShootId, modelType: 'adult', modelId: { [Op.in]: adultIds } } });
+        const mapA = new Map(aa.map(a => [a.modelId, a]));
+        for (const adult of adults) {
+          const ap = mapA.get(adult.id);
+          adult.approvalStatus = ap ? ap.approvalStatus : null;
+        }
       }
-      
-      // Fetch approval status for children
-      for (const child of children) {
-        const approval = await ModelApproval.findOne({
-          where: { shootId: selectedShootId, modelType: 'child', modelId: child.id }
-        });
-        child.approvalStatus = approval ? approval.approvalStatus : null;
-        child.approvalNotes = approval ? approval.notes : null;
+      if (childIds.length) {
+        const cc = await ModelApproval.findAll({ where: { shootId: selectedShootId, modelType: 'child', modelId: { [Op.in]: childIds } } });
+        const mapC = new Map(cc.map(a => [a.modelId, a]));
+        for (const child of children) {
+          const ap = mapC.get(child.id);
+          child.approvalStatus = ap ? ap.approvalStatus : null;
+        }
       }
-      
-      // Filter by approval status if specified
+
       if (approvalStatus !== undefined && approvalStatus !== '') {
         const status = approvalStatus === 'null' ? null : parseInt(approvalStatus);
         adults = adults.filter(adult => adult.approvalStatus === status);
         children = children.filter(child => child.approvalStatus === status);
       }
     }
-    
+
+    const loadedCount = adults.length + children.length + ((currentPage - 1) * itemsPerPage);
+    const hasMore = loadedCount < totalItems && (adults.length + children.length) > 0;
+
     res.render('clientDashboard', {
       client,
       shoots,
       selectedShootId,
       adults,
       children,
-      filters: req.query
+      filters: req.query,
+      pagination: {
+        currentPage,
+        itemsPerPage,
+        totalItems,
+        hasNextPage: hasMore,
+        hasPrevPage: currentPage > 1,
+        totalPages: Math.ceil(totalItems / itemsPerPage)
+      }
     });
   } catch (err) {
     console.error('Error in client dashboard:', err);
@@ -1862,3 +2040,43 @@ router.get('/admin/clients/manage', async (req, res) => {
 });
 
 module.exports = router; 
+ 
+// Add admin-only client impersonation route to switch session to a client and redirect
+router.post('/admin/impersonate-client', requireAdmin, async (req, res) => {
+  try {
+    const { clientId, shootId } = req.body || {};
+    if (!clientId) {
+      return res.status(400).json({ success: false, error: 'clientId is required' });
+    }
+    const client = await Client.findByPk(clientId);
+    if (!client || client.isActive === false) {
+      return res.status(404).json({ success: false, error: 'Client not found or inactive' });
+    }
+
+    // Clear any existing client session, then set new client context
+    req.session.clientId = client.id;
+    req.session.clientName = client.name;
+    req.session.clientEmail = client.email;
+
+    // Optionally validate the shoot belongs to this client if provided
+    if (shootId) {
+      const shoot = await Shoot.findOne({ where: { id: shootId, clientId: client.id } });
+      if (!shoot) {
+        return res.status(400).json({ success: false, error: 'Shoot does not belong to client' });
+      }
+    }
+
+    // Persist the session before redirecting
+    req.session.save((err) => {
+      if (err) {
+        console.error('Error saving session during impersonation:', err);
+        return res.status(500).json({ success: false, error: 'Session save failed' });
+      }
+      const redirectUrl = shootId ? `/client/dashboard?shootId=${encodeURIComponent(shootId)}` : '/client/dashboard';
+      return res.json({ success: true, redirect: redirectUrl });
+    });
+  } catch (error) {
+    console.error('Error in /admin/impersonate-client:', error);
+    return res.status(500).json({ success: false, error: 'Server error' });
+  }
+});

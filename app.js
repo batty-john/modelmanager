@@ -8,6 +8,7 @@ const MySQLStore = require('express-mysql-session')(session);
 const authRouter = require('./routes/auth');
 const dashboardRouter = require('./routes/dashboard');
 const adultIntakeRouter = require('./routes/adultIntake');
+const uploadRouter = require('./routes/upload');
 
 const app = express();
 
@@ -321,6 +322,7 @@ app.get('/session-debug', (req, res) => {
 // Routes - MUST come after middleware
 app.use('/intake/child', childIntakeRouter);
 app.use('/intake/adult', adultIntakeRouter);
+app.use('/upload', uploadRouter);
 app.use(authRouter);
 app.use(dashboardRouter);
 
