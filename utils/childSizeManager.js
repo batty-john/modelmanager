@@ -38,13 +38,12 @@ async function updateChildSizes(childId, weight, height, transaction = null) {
       transaction
     });
     
-    // Create new size records (no primary distinction)
+    // Create new size records
     const childSizeRecords = await Promise.all(
       applicableSizes.map((size, index) => 
         ChildSize.create({
           childId,
-          size: size,
-          isPrimary: index === 0 // Keep first one as primary for database constraint
+          size: size
         }, { transaction })
       )
     );
@@ -66,7 +65,7 @@ async function getChildSizes(childId) {
   try {
     return await ChildSize.findAll({
       where: { childId },
-      order: [['isPrimary', 'DESC'], ['size', 'ASC']]
+      order: [['size', 'ASC']]
     });
   } catch (error) {
     console.error('Error getting child sizes:', error);
@@ -81,14 +80,9 @@ async function getChildSizes(childId) {
  */
 async function getPrimaryChildSize(childId) {
   try {
-    const primarySize = await ChildSize.findOne({
-      where: { 
-        childId,
-        isPrimary: true 
-      }
-    });
-    
-    return primarySize ? primarySize.size : null;
+    // Read from legacy field maintained on ChildModel
+    const child = await ChildModel.findByPk(childId, { attributes: ['childSize'] });
+    return child ? child.childSize : null;
   } catch (error) {
     console.error('Error getting primary child size:', error);
     throw error;

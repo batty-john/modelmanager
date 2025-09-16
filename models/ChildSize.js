@@ -13,11 +13,6 @@ const ChildSize = sequelize.define('ChildSize', {
   size: {
     type: DataTypes.STRING,
     allowNull: false,
-  },
-  isPrimary: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    comment: 'Indicates if this is the primary/preferred size for the child'
   }
 }, {
   timestamps: true,
@@ -27,13 +22,6 @@ const ChildSize = sequelize.define('ChildSize', {
     },
     {
       fields: ['size']
-    },
-    {
-      fields: ['childId', 'isPrimary'],
-      unique: true,
-      where: {
-        isPrimary: true
-      }
     }
   ]
 });
