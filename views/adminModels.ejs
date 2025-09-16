@@ -508,11 +508,11 @@
     <div id="modelsGrid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       <% adults.forEach(function(adult) { %>
         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="adult" data-model-id="<%= adult.id %>" data-dob="<%= adult.dob || '' %>">
-          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
+          <div class="relative w-full bg-gray-200 flex-shrink-0" style="padding-top:125%;">
             <% if (adult.photo) { %>
-              <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" alt="Adult Photo" />
+              <img src="<%= adult.photo %>" class="absolute inset-0 w-full h-full object-cover" style="display:block;" alt="Adult Photo" />
             <% } else { %>
-              <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+              <div class="absolute inset-0 bg-gray-200 flex items-center justify-center">
                 <span class="text-gray-400 text-4xl">👤</span>
               </div>
             <% } %>
@@ -557,11 +557,11 @@
       <% }); %>
       <% children.forEach(function(child) { %>
         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="child" data-model-id="<%= child.id %>" data-dob="<%= child.childDOB || '' %>">
-          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
+          <div class="relative w-full bg-gray-200 flex-shrink-0" style="padding-top:125%;">
             <% if (child.photo) { %>
-              <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" alt="Child Photo" />
+              <img src="<%= child.photo %>" class="absolute inset-0 w-full h-full object-cover" style="display:block;" alt="Child Photo" />
             <% } else { %>
-              <div class="w-full h-full bg-gray-200 flex items-center justify-center">
+              <div class="absolute inset-0 bg-gray-200 flex items-center justify-center">
                 <span class="text-gray-400 text-4xl">👤</span>
               </div>
             <% } %>
@@ -1270,8 +1270,8 @@
     // Generate HTML for adult card
     function generateAdultCardHtml(adult) {
       const photoHtml = adult.photo
-        ? `<img data-src="${adult.photo}" class="w-full h-full object-cover lazy" style="display:block;" loading="lazy" alt="Adult Photo" />`
-        : `<div class="w-full h-full bg-gray-200 flex items-center justify-center"><span class="text-gray-400 text-4xl">👤</span></div>`;
+        ? `<img data-src="${adult.photo}" class="absolute inset-0 w-full h-full object-cover lazy" style="display:block;" loading="lazy" alt="Adult Photo" />`
+        : `<div class="absolute inset-0 bg-gray-200 flex items-center justify-center"><span class="text-gray-400 text-4xl">👤</span></div>`;
 
       const approvalStatus = adult.approvalStatus;
       const isShootSelected = !!(document.getElementById('shootSelect') && document.getElementById('shootSelect').value);
@@ -1290,7 +1290,7 @@
 
       return `
         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="adult" data-model-id="${adult.id}" data-dob="${adult.dob || ''}">
-          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
+          <div class="relative w-full bg-gray-200 flex-shrink-0" style="padding-top:125%;">
             ${photoHtml}
           </div>
           <div class="p-4 flex flex-col items-center">
@@ -1313,8 +1313,8 @@
     // Generate HTML for child card
     function generateChildCardHtml(child) {
       const photoHtml = child.photo
-        ? `<img data-src="${child.photo}" class="w-full h-full object-cover lazy" style="display:block;" loading="lazy" alt="Child Photo" />`
-        : `<div class="w-full h-full bg-gray-200 flex items-center justify-center"><span class="text-gray-400 text-4xl">👤</span></div>`;
+        ? `<img data-src="${child.photo}" class="absolute inset-0 w-full h-full object-cover lazy" style="display:block;" loading="lazy" alt="Child Photo" />`
+        : `<div class="absolute inset-0 bg-gray-200 flex items-center justify-center"><span class="text-gray-400 text-4xl">👤</span></div>`;
 
       const sizesHtml = child.sizes && child.sizes.length > 0
         ? child.sizes.map(size => `<span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full mr-1 mb-1">${size.size}</span>`).join('')
@@ -1337,7 +1337,7 @@
 
       return `
         <div class="bg-white rounded shadow flex flex-col items-stretch p-0 overflow-hidden" data-model-type="child" data-model-id="${child.id}" data-dob="${child.childDOB || ''}">
-          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
+          <div class="relative w-full bg-gray-200 flex-shrink-0" style="padding-top:125%;">
             ${photoHtml}
           </div>
           <div class="p-4 flex flex-col items-center">
