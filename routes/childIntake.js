@@ -369,7 +369,6 @@ router.post('/',
     }
 
     let errors = [];
-    const deferPhotos = req.body.deferPhotos === 'true';
     let success = null;
     
     // Wrap entire child processing logic in comprehensive error handling
@@ -394,7 +393,7 @@ router.post('/',
         if (!existingPhoto && req.body[`existingPhoto${idx}`]) {
           existingPhoto = req.body[`existingPhoto${idx}`];
         }
-        if (!childName || !childDOB || !childGender || !childWeight || !childHeight || (!deferPhotos && !photoFile && !existingPhoto)) {
+        if (!childName || !childDOB || !childGender || !childWeight || !childHeight || (!photoFile && !existingPhoto)) {
           errors.push({ msg: `Missing required fields for child ${parseInt(idx) + 1}` });
           continue;
         }

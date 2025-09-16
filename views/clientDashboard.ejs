@@ -166,7 +166,7 @@
              data-approval="<%= adult.approvalStatus %>">
          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
             <% if (adult.photo) { %>
-              <img data-src="<%= adult.photo %>" class="w-full h-full object-cover lazy" style="display:block;" loading="lazy" alt="Adult Photo" />
+              <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" alt="Adult Photo" />
             <% } else { %>
               <div class="w-full h-full bg-gray-200 flex items-center justify-center">
                 <span class="text-gray-400 text-4xl">👤</span>
@@ -217,7 +217,7 @@
              data-approval="<%= child.approvalStatus %>">
          <div class="w-full h-64 bg-gray-200 flex-shrink-0">
             <% if (child.photo) { %>
-              <img data-src="<%= child.photo %>" class="w-full h-full object-cover lazy" style="display:block;" loading="lazy" alt="Child Photo" />
+              <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" alt="Child Photo" />
             <% } else { %>
               <div class="w-full h-full bg-gray-200 flex items-center justify-center">
                 <span class="text-gray-400 text-4xl">👤</span>
@@ -584,10 +584,7 @@
       }
     });
 
-    // Simple Lazy Loading
-    const lazyLoaderScript = document.createElement('script');
-    lazyLoaderScript.src = '/public/simple-lazy-loader.js';
-    document.head.appendChild(lazyLoaderScript);
+    // Images now load directly via src like the admin view
   </script>
 </body>
 </html> 

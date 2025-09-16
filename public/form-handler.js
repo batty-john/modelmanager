@@ -125,7 +125,7 @@ class EnhancedFormHandler {
           setTimeout(() => indicator.remove(), 1500);
         } catch (err) {
           console.error('Async photo upload failed:', err);
-          indicator.textContent = 'Upload failed. You can submit without photo and add later.';
+          indicator.textContent = 'Upload failed. Please try again or choose a different photo.';
           setTimeout(() => indicator.remove(), 4000);
         }
       };
@@ -176,10 +176,8 @@ class EnhancedFormHandler {
   }
 
   async attemptAjaxSubmission(form) {
-    // Temporarily disable file inputs that already have uploaded values or when deferring
+    // Temporarily disable file inputs that already have uploaded values
     const disabledInputs = [];
-    const defer = form.querySelector('#deferPhotos');
-    const deferChecked = !!(defer && defer.checked);
     form.querySelectorAll('input[type="file"]').forEach(fi => {
       const name = fi.name;
       const idx = name.replace(/^[^0-9]*/, '');
@@ -187,7 +185,7 @@ class EnhancedFormHandler {
       const hiddenName = isAdult ? `photo${idx}` : `existingPhoto${idx}`;
       const hidden = form.querySelector(`input[type="hidden"][name="${hiddenName}"]`);
       const hasUploaded = hidden && hidden.value;
-      if (deferChecked || hasUploaded || fi.getAttribute('data-uploaded') === 'true') {
+      if (hasUploaded || fi.getAttribute('data-uploaded') === 'true') {
         if (!fi.disabled) {
           fi.disabled = true;
           disabledInputs.push(fi);
@@ -290,9 +288,7 @@ class EnhancedFormHandler {
         const isAdult = name.startsWith('adultPhoto');
         const hiddenName = isAdult ? `photo${idx}` : `existingPhoto${idx}`;
         const hidden = form.querySelector(`input[type="hidden"][name="${hiddenName}"]`);
-        const defer = form.querySelector('#deferPhotos');
-        const deferChecked = !!(defer && defer.checked);
-        if ((hidden && hidden.value) || deferChecked || field.getAttribute('data-uploaded') === 'true') {
+        if ((hidden && hidden.value) || field.getAttribute('data-uploaded') === 'true') {
           return; // Treat as satisfied
         }
       }
