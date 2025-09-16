@@ -164,15 +164,16 @@
              data-gender="<%= adult.gender %>"
              data-size="<%= adult.size %>"
              data-approval="<%= adult.approvalStatus %>">
-         <div class="w-full h-64 bg-gray-200 flex-shrink-0">
-            <% if (adult.photo) { %>
-              <img src="<%= adult.photo %>" class="w-full h-full object-cover" style="display:block;" alt="Adult Photo" />
-            <% } else { %>
-              <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                <span class="text-gray-400 text-4xl">👤</span>
-              </div>
-            <% } %>
-          </div>
+         <!-- Portrait aspect ratio container like admin view -->
+        <div class="relative w-full bg-gray-200 flex-shrink-0" style="padding-top:125%;">
+          <% if (adult.photo) { %>
+            <img src="<%= adult.photo %>" class="absolute inset-0 w-full h-full object-cover" style="display:block;" alt="Adult Photo" />
+          <% } else { %>
+            <div class="absolute inset-0 bg-gray-200 flex items-center justify-center">
+              <span class="text-gray-400 text-4xl">👤</span>
+            </div>
+          <% } %>
+        </div>
           <div class="p-4 flex flex-col items-center">
             <div class="font-bold text-lg mb-1 text-center"><%= adult.firstName %></div>
             <div class="text-xs text-gray-500 mb-2">Adult</div>
@@ -215,15 +216,16 @@
              data-size="<%= child.childSize %>"
              data-all-sizes="<% if (child.sizes && child.sizes.length > 0) { %><%= child.sizes.map(s => s.size).join(',') %><% } else { %><%= child.childSize || '' %><% } %>"
              data-approval="<%= child.approvalStatus %>">
-         <div class="w-full h-64 bg-gray-200 flex-shrink-0">
-            <% if (child.photo) { %>
-              <img src="<%= child.photo %>" class="w-full h-full object-cover" style="display:block;" alt="Child Photo" />
-            <% } else { %>
-              <div class="w-full h-full bg-gray-200 flex items-center justify-center">
-                <span class="text-gray-400 text-4xl">👤</span>
-              </div>
-            <% } %>
-          </div>
+         <!-- Portrait aspect ratio container like admin view -->
+        <div class="relative w-full bg-gray-200 flex-shrink-0" style="padding-top:125%;">
+          <% if (child.photo) { %>
+            <img src="<%= child.photo %>" class="absolute inset-0 w-full h-full object-cover" style="display:block;" alt="Child Photo" />
+          <% } else { %>
+            <div class="absolute inset-0 bg-gray-200 flex items-center justify-center">
+              <span class="text-gray-400 text-4xl">👤</span>
+            </div>
+          <% } %>
+        </div>
           <div class="p-4 flex flex-col items-center">
             <div class="font-bold text-lg mb-1 text-center"><%= child.childFirstName %></div>
             <div class="text-xs text-gray-500 mb-2">Child</div>
