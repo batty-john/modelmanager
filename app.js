@@ -146,6 +146,7 @@ app.use((req, res, next) => {
 });
 
 // Static files
+app.use('/public/uploads', require('./utils/storage').serveMiddleware());
 app.use('/public', express.static(path.join(__dirname, 'public')));
 
 // Set EJS as templating engine

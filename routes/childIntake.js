@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const durableStorage = require('../utils/storage');
 const path = require('path');
 const bcrypt = require('bcrypt');
 const nodemailer = require('nodemailer');
@@ -64,7 +65,7 @@ const { calculateChildSize, calculateChildSizes, hasOverlappingSizes } = require
 const { updateChildSizes } = require('../utils/childSizeManager');
 
 // Enhanced multer configuration with robust error handling
-const storage = multer.diskStorage({
+const storage = durableStorage.mirroredDiskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../public/uploads'));
   },

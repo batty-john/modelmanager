@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const durableStorage = require('../utils/storage');
 const path = require('path');
 const ChildModel = require('../models/ChildModel');
 const AdultModel = require('../models/AdultModel');
@@ -53,7 +54,7 @@ const { calculateChildSize, calculateChildSizes, hasOverlappingSizes } = require
 const { updateChildSizes, getChildrenBySize } = require('../utils/childSizeManager');
 
 // Multer setup for file uploads
-const storage = multer.diskStorage({
+const storage = durableStorage.mirroredDiskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../public/uploads'));
   },
@@ -1489,6 +1490,7 @@ router.post('/admin/models/delete', requireAdmin, async (req, res) => {
           if (fs.existsSync(photoPath)) {
             fs.unlinkSync(photoPath);
           }
+          durableStorage.remove(photoPath);
         } catch (err) {
           console.error('Error deleting photo file:', err);
         }
@@ -1507,6 +1509,7 @@ router.post('/admin/models/delete', requireAdmin, async (req, res) => {
           if (fs.existsSync(photoPath)) {
             fs.unlinkSync(photoPath);
           }
+          durableStorage.remove(photoPath);
         } catch (err) {
           console.error('Error deleting photo file:', err);
         }

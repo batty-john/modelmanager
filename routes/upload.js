@@ -1,11 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const durableStorage = require('../utils/storage');
 const path = require('path');
 const imageProcessor = require('../utils/imageProcessor');
 
 // Multer storage for uploads
-const storage = multer.diskStorage({
+const storage = durableStorage.mirroredDiskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../public/uploads'));
   },

@@ -1,6 +1,7 @@
 const sharp = require('sharp');
 const path = require('path');
 const fs = require('fs').promises;
+const storage = require('./storage');
 
 class ImageProcessor {
   constructor() {
@@ -66,6 +67,8 @@ class ImageProcessor {
         })
         .toFile(thumbnailPath);
 
+      await Promise.all([storage.put(compressedPath), storage.put(thumbnailPath)]);
+
       // Get file sizes for logging
       const originalStats = await fs.stat(originalPath);
       const compressedStats = await fs.stat(compressedPath);
@@ -128,6 +131,10 @@ class ImageProcessor {
     try {
       await fs.unlink(path.join(this.compressedDir, compressedFilename)).catch(() => {});
       await fs.unlink(path.join(this.thumbnailsDir, thumbnailFilename)).catch(() => {});
+      await Promise.all([
+        storage.remove(`compressed/${compressedFilename}`),
+        storage.remove(`thumbnails/${thumbnailFilename}`),
+      ]);
       console.log(`🧹 Cleaned up processed images for: ${filename}`);
     } catch (error) {
       console.error(`Error cleaning up processed images for ${filename}:`, error);

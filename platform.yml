@@ -1,0 +1,14 @@
+# Tandem Launch deploy config (migrated off amelia/cPanel Passenger, 2026-10).
+project: annie-jean-models
+
+services:
+  web:
+    path: .
+    type: node
+    # The app reads DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME; Tandem injects one
+    # DATABASE_URL, so split it at boot. SESSION_SECRET must be set as an env var:
+    # sessions live in MySQL, so it has to survive restarts.
+    # Photos persist in the attached bucket (S3_* env) via utils/storage.js.
+    start: >-
+      node -e 'const u=new URL(process.env.DATABASE_URL);Object.assign(process.env,{DB_HOST:u.hostname,DB_PORT:u.port||"3306",DB_USER:decodeURIComponent(u.username),DB_PASSWORD:decodeURIComponent(u.password),DB_NAME:u.pathname.slice(1)});require("./app.js")'
+    healthcheck: /health

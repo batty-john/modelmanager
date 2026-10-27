@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const durableStorage = require('../utils/storage');
 const path = require('path');
 const AdultModel = require('../models/AdultModel');
 const User = require('../models/User');
@@ -58,7 +59,7 @@ async function sendWelcomeEmailAsync(email, password) {
 }
 
 // Enhanced multer configuration with error handling
-const storage = multer.diskStorage({
+const storage = durableStorage.mirroredDiskStorage({
   destination: function (req, file, cb) {
     cb(null, path.join(__dirname, '../public/uploads'));
   },
