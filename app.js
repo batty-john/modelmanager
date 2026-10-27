@@ -206,18 +206,6 @@ if (process.env.NODE_ENV && process.env.NODE_ENV.toLowerCase() === 'production')
 // Session middleware - MUST come before routes
 app.use(session(sessionConfig));
 
-// Debug middleware to log requests
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - Content-Type: ${req.headers['content-type']}`);
-  console.log('Session ID:', req.sessionID);
-  console.log('Cookies:', req.headers.cookie);
-  if (req.method === 'POST') {
-    console.log('Request body keys:', Object.keys(req.body || {}));
-    // Don't log full body as it may contain large data
-  }
-  next();
-});
-
 // Database sync with retry logic
 async function connectToDatabase(retries = 3) {
   for (let i = 0; i < retries; i++) {
@@ -253,54 +241,6 @@ app.get('/', (req, res) => {
   res.render('splash');
 });
 
-// Test endpoint for debugging
-app.post('/test-body', (req, res) => {
-  console.log('Test endpoint called');
-  console.log('Headers:', req.headers);
-  console.log('Body:', req.body);
-  console.log('Body type:', typeof req.body);
-  res.json({
-    success: true,
-    body: req.body,
-    headers: req.headers,
-    method: req.method
-  });
-});
-
-// Session test endpoint
-app.get('/test-session', (req, res) => {
-  console.log('Session test endpoint called');
-  console.log('Session ID:', req.sessionID);
-  console.log('Session data:', req.session);
-  
-  // Set a test value in session
-  req.session.testValue = 'test-' + Date.now();
-  
-  res.json({
-    sessionID: req.sessionID,
-    sessionData: req.session,
-    sessionKeys: Object.keys(req.session || {}),
-    hasSession: !!req.session
-  });
-});
-
-app.get('/test-session-read', (req, res) => {
-  console.log('Session read test endpoint called');
-  console.log('Session ID:', req.sessionID);
-  console.log('Session data:', req.session);
-  
-  res.json({
-    sessionID: req.sessionID,
-    sessionData: req.session,
-    testValue: req.session.testValue,
-    hasSession: !!req.session,
-    cookies: req.headers.cookie,
-    userAgent: req.headers['user-agent'],
-    host: req.headers.host,
-    referer: req.headers.referer
-  });
-});
-
 // Client login page
 app.get('/client-login', (req, res) => {
   res.render('clientLogin');
@@ -316,10 +256,6 @@ app.get('/clients', (req, res) => {
 });
 
 // Session debug page
-app.get('/session-debug', (req, res) => {
-  res.render('sessionDebug');
-});
-
 // Routes - MUST come after middleware
 app.use('/intake/child', childIntakeRouter);
 app.use('/intake/adult', adultIntakeRouter);

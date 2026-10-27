@@ -16,20 +16,9 @@ const imageProcessor = require('../utils/imageProcessor');
 
 // Middleware to require login
 function requireLogin(req, res, next) {
-  console.log('requireLogin middleware - Session:', {
-    userId: req.session.userId,
-    userEmail: req.session.userEmail,
-    sessionID: req.sessionID,
-    hasSession: !!req.session,
-    sessionKeys: req.session ? Object.keys(req.session) : []
-  });
-  
   if (!req.session.userId) {
-    console.log('No userId in session, redirecting to login');
-    console.log('Full session object:', req.session);
     return res.redirect('/login');
   }
-  console.log('User authenticated, proceeding');
   next();
 }
 
@@ -1057,62 +1046,6 @@ router.get('/admin/models', requireAdmin, async (req, res) => {
   });
 });
 
-// Debug endpoint for checking raw model data
-router.get('/admin/models/debug', requireAdmin, async (req, res) => {
-  try {
-    const adults = await AdultModel.findAll({ limit: 2 });
-    const children = await ChildModel.findAll({ limit: 2 });
-
-    res.json({
-      adults: adults.map(a => ({ id: a.id, userId: a.userId, firstName: a.firstName })),
-      children: children.map(c => ({ id: c.id, userId: c.userId, childFirstName: c.childFirstName }))
-    });
-  } catch (error) {
-    res.json({ error: error.message });
-  }
-});
-
-// Debug endpoint for checking user data
-router.get('/admin/models/debug-users', requireAdmin, async (req, res) => {
-  try {
-    const { userIds } = req.query;
-
-    if (!userIds) {
-      return res.json({ error: 'userIds parameter required' });
-    }
-
-    const ids = userIds.split(',').map(id => parseInt(id.trim()));
-
-    const users = [];
-    for (const userId of ids) {
-      try {
-        const user = await User.findByPk(userId);
-        users.push({
-          userId,
-          found: !!user,
-          data: user ? {
-            email: user.email,
-            parentPhone: user.parentPhone,
-            brands: user.brands,
-            facebookProfileLink: user.facebookProfileLink,
-            instagramProfileLink: user.instagramProfileLink
-          } : null
-        });
-      } catch (error) {
-        users.push({
-          userId,
-          found: false,
-          error: error.message
-        });
-      }
-    }
-
-    res.json({ users });
-  } catch (error) {
-    res.json({ error: error.message });
-  }
-});
-
 // API endpoint for loading more models (lazy pagination)
 router.get('/admin/models/api', requireAdmin, async (req, res) => {
   try {
@@ -1665,7 +1598,7 @@ router.get('/admin/model-approvals/shoot/:shootId', requireAdmin, async (req, re
 });
 
 // Update Client
-router.post('/admin/clients/update', async (req, res) => {
+router.post('/admin/clients/update', requireAdmin, async (req, res) => {
   try {
     const { clientId, name, email, ineligibleBrands } = req.body;
     
@@ -1688,7 +1621,7 @@ router.post('/admin/clients/update', async (req, res) => {
 });
 
 // Reset Client Password
-router.post('/admin/clients/reset-password', async (req, res) => {
+router.post('/admin/clients/reset-password', requireAdmin, async (req, res) => {
   try {
     const { clientId, newPassword } = req.body;
     
@@ -1713,7 +1646,7 @@ router.post('/admin/clients/reset-password', async (req, res) => {
 });
 
 // Delete Client
-router.post('/admin/clients/delete', async (req, res) => {
+router.post('/admin/clients/delete', requireAdmin, async (req, res) => {
   try {
     const { clientId } = req.body;
     
@@ -1736,7 +1669,7 @@ router.post('/admin/clients/delete', async (req, res) => {
 });
 
 // Update Shoot
-router.post('/admin/shoots/update', async (req, res) => {
+router.post('/admin/shoots/update', requireAdmin, async (req, res) => {
   try {
     const { shootId, name, description, shootDate } = req.body;
     
@@ -1759,7 +1692,7 @@ router.post('/admin/shoots/update', async (req, res) => {
 });
 
 // Delete Shoot
-router.post('/admin/shoots/delete', async (req, res) => {
+router.post('/admin/shoots/delete', requireAdmin, async (req, res) => {
   try {
     const { shootId } = req.body;
     
@@ -2017,7 +1950,7 @@ router.post('/client/shoots', requireClient, async (req, res) => {
 });
 
 // Client Management Page
-router.get('/admin/clients/manage', async (req, res) => {
+router.get('/admin/clients/manage', requireAdmin, async (req, res) => {
   try {
     const clients = await Client.findAll({
       order: [['createdAt', 'DESC']]

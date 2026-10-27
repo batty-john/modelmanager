@@ -80,7 +80,6 @@ router.post('/login', async (req, res) => {
       userId: req.session.userId,
       userEmail: req.session.userEmail,
       isAdmin: req.session.isAdmin,
-      sessionID: req.sessionID
     });
     
     // Force session save and check if it worked
@@ -95,7 +94,6 @@ router.post('/login', async (req, res) => {
         userId: req.session.userId,
         userEmail: req.session.userEmail,
         isAdmin: req.session.isAdmin,
-        sessionID: req.sessionID
       });
       
       // Redirect

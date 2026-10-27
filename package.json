@@ -6,10 +6,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "setup": "node setupUploads.js",
-    "test-session": "node testSession.js",
-    "test-session-store": "node testSessionStore.js",
-    "test-env": "node testEnv.js"
+    "setup": "node setupUploads.js"
   },
   "keywords": [],
   "author": "",
