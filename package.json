@@ -23,13 +23,18 @@
     "express-session": "^1.18.1",
     "express-validator": "^7.2.1",
     "multer": "^2.0.1",
-    "mysql2": "^3.14.1",
-    "nodemailer": "^7.0.5",
+    "mysql2": "^3.24.6",
+    "nodemailer": "^10.2.1",
     "sequelize": "^6.37.7",
-    "sharp": "^0.34.3"
+    "sharp": "^0.35.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",
     "sequelize-cli": "^6.6.3"
+  },
+  "overrides": {
+    "express-mysql-session": {
+      "mysql2": "$mysql2"
+    }
   }
 }
