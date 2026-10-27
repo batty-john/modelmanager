@@ -7,6 +7,7 @@ const AdultModel = require('../models/AdultModel');
 const User = require('../models/User');
 const Client = require('../models/Client');
 const Shoot = require('../models/Shoot');
+const { contactsCsv } = require('../utils/contactsExport');
 const ModelApproval = require('../models/ModelApproval');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
@@ -1353,6 +1354,28 @@ router.get('/admin/dashboard', requireAdmin, (req, res) => {
   res.redirect('/admin/models');
 });
 
+// GET /admin/export/contacts.csv — download parent/guardian contacts for marketing emails
+router.get('/admin/export/contacts.csv', requireAdmin, async (req, res) => {
+  try {
+    const users = await User.findAll({
+      where: { isAdmin: false },
+      attributes: ['email', 'parentFirstName', 'parentLastName', 'parentPhone', 'preferredContact', 'createdAt'],
+      order: [['createdAt', 'ASC']]
+    });
+    const { csv, count } = contactsCsv(users);
+    const today = new Date().toISOString().slice(0, 10);
+    console.log(`Contacts export: ${count} rows by admin user ${req.session.userId}`);
+    res.set('Content-Type', 'text/csv; charset=utf-8');
+    res.set('Content-Disposition', `attachment; filename="annie-jean-photography-contacts-${today}.csv"`);
+    res.set('Cache-Control', 'no-store');
+    // BOM so Excel opens accented names correctly
+    res.send('\uFEFF' + csv);
+  } catch (error) {
+    console.error('Error exporting contacts:', error);
+    res.status(500).send('Error exporting contacts');
+  }
+});
+
 // Inline update endpoint for admin model editing
 router.post('/admin/models/update', requireAdmin, async (req, res) => {
   try {
@@ -1662,7 +1685,7 @@ router.get('/admin/model-approvals/shoot/:shootId', requireAdmin, async (req, re
 });
 
 // Update Client
-router.post('/admin/clients/update', async (req, res) => {
+router.post('/admin/clients/update', requireAdmin, async (req, res) => {
   try {
     const { clientId, name, email, ineligibleBrands } = req.body;
     
@@ -1685,7 +1708,7 @@ router.post('/admin/clients/update', async (req, res) => {
 });
 
 // Reset Client Password
-router.post('/admin/clients/reset-password', async (req, res) => {
+router.post('/admin/clients/reset-password', requireAdmin, async (req, res) => {
   try {
     const { clientId, newPassword } = req.body;
     
@@ -1710,7 +1733,7 @@ router.post('/admin/clients/reset-password', async (req, res) => {
 });
 
 // Delete Client
-router.post('/admin/clients/delete', async (req, res) => {
+router.post('/admin/clients/delete', requireAdmin, async (req, res) => {
   try {
     const { clientId } = req.body;
     
@@ -1733,7 +1756,7 @@ router.post('/admin/clients/delete', async (req, res) => {
 });
 
 // Update Shoot
-router.post('/admin/shoots/update', async (req, res) => {
+router.post('/admin/shoots/update', requireAdmin, async (req, res) => {
   try {
     const { shootId, name, description, shootDate } = req.body;
     
@@ -1756,7 +1779,7 @@ router.post('/admin/shoots/update', async (req, res) => {
 });
 
 // Delete Shoot
-router.post('/admin/shoots/delete', async (req, res) => {
+router.post('/admin/shoots/delete', requireAdmin, async (req, res) => {
   try {
     const { shootId } = req.body;
     
@@ -2014,7 +2037,7 @@ router.post('/client/shoots', requireClient, async (req, res) => {
 });
 
 // Client Management Page
-router.get('/admin/clients/manage', async (req, res) => {
+router.get('/admin/clients/manage', requireAdmin, async (req, res) => {
   try {
     const clients = await Client.findAll({
       order: [['createdAt', 'DESC']]
